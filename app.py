@@ -118,7 +118,7 @@ st.markdown(
         text-shadow: 0px 2px 10px rgba(239, 68, 68, 0.5);
     }}
 
-    /* SARI NENON ÇERÇEVELİ BÜYÜK SKORBOARD RESMİ */
+    /* SARI NEON ÇERÇEVELİ BÜYÜK SKORBOARD RESMİ */
     .scoreboard-img {{
         width: 100%;
         max-width: 280px;
@@ -321,7 +321,13 @@ with st.container():
 
     with f4:
         st.caption("PARA VERCEK MİSİN (BURS DURUMU)")
-        burs_secenekleri = ["Burslu", "%50 İndirimli", "%25 İndirimli", "Ücretli"]
+        burs_secenekleri = [
+            "Burslu",
+            "%50 İndirimli",
+            "%25 İndirimli",
+            "Ücretli",
+            "Ücretsiz",
+        ]
         secilen_burslar = st.multiselect(
             "Burs Durumu",
             burs_secenekleri,
@@ -394,7 +400,7 @@ with tab1:
                 )
             ]
 
-        # Bölüm Filtresi
+        # Bölüm Filtresi (Geliştirilmiş Esnek Arama)
         if secilen_bolumler and "Bölüm" in temp_df.columns:
             secilen_bolumler_tr = [tr_lower(b) for b in secilen_bolumler]
             temp_df = temp_df[
@@ -403,7 +409,7 @@ with tab1:
                 )
             ]
 
-        # Burs / İndirim Filtresi
+        # Burs / İndirim Filtresi (Geliştirilmiş Esnek Arama)
         if secilen_burslar and "Bölüm" in temp_df.columns:
             secilen_burslar_tr = [tr_lower(b) for b in secilen_burslar]
             temp_df = temp_df[
@@ -414,7 +420,7 @@ with tab1:
 
         if temp_df.empty:
             st.warning(
-                "⚠️ Aradığın kriterlerde sonuç çıkmadı! Seçimleri biraz gevşetip tekrar 'BUL LAN'a bas."
+                "⚠️ Aradığın kriterlerde sonuç çıkmadı! Seçimleri biraz gevşetip (örneğin sadece Bölüm veya sadece Burs seçerek) tekrar 'BUL LAN'a bas."
             )
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
