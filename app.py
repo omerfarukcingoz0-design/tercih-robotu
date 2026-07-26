@@ -110,7 +110,6 @@ st.markdown(
 
 
 def norm(text):
-    """Metinleri Türkçe karaktersiz ve küçük harfe çevirir"""
     if not isinstance(text, str):
         return ""
     text = (
@@ -133,35 +132,33 @@ def norm(text):
 @st.cache_data
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
-
-    # Kolon isimlerini temizle (başındaki/sonundaki boşlukları sil)
     df.columns = df.columns.str.strip()
 
-    # Tam eşleşen sütun bulucu (Karıklığı Önler)
+    # Sütun isimlerini akıllı eşleme ile düzelt
     rename_mapping = {}
     for col in df.columns:
-        c_low = col.lower()
-        if "üniversite" in c_low or "universite" in c_low:
+        c_low = norm(col)
+        if "universite" in c_low or "uni" in c_low:
             rename_mapping[col] = "Üniversite"
-        elif "bölüm" in c_low or "bolum" in c_low or "program" in c_low:
+        elif "bolum" in c_low or "program" in c_low:
             rename_mapping[col] = "Bölüm"
-        elif "2023" in c_low or "sıra" in c_low or "sira" in c_low:
+        elif "sira" in c_low or "2023" in c_low or "2024" in c_low:
             rename_mapping[col] = "Sıralama"
-        elif "puan" in c_low or "tür" in c_low:
+        elif "puan" in c_low or "tur" in c_low:
             rename_mapping[col] = "Puan_Türü"
-        elif c_low in ["şehir", "sehir", "il adı", "şehir adı"]:
+        elif c_low in ["sehir", "il", "il adi", "sehir adi"]:
             rename_mapping[col] = "Şehir"
-        elif "fakülte" in c_low or "fakulte" in c_low:
+        elif "fakulte" in c_low:
             rename_mapping[col] = "Fakülte"
 
     df = df.rename(columns=rename_mapping)
 
-    # Eksik kolon kontrolü
+    # Zorunlu kolon kontrolü - Yoksa oluşturur patlamayı önler
     for req in ["Üniversite", "Bölüm", "Sıralama", "Puan_Türü", "Şehir"]:
         if req not in df.columns:
-            df[req] = ""
+            df[req] = "Belirtilmedi"
 
-    # Şehir sütunundan float/sayısal saçmalıkları temizle
+    # Şehir sütunundaki sayısal değerleri veya boşlukları temizle
     df["Şehir"] = df["Şehir"].astype(str).replace(r"^\d+(\.\d+)?$", "", regex=True)
 
     return df
@@ -244,12 +241,12 @@ with st.container():
     f1, f2, f3, f4 = st.columns(4)
     with f1:
         st.caption("HANGİ ŞEHİR")
-        # Yalnızca harf içeren gerçek şehir adlarını listele
         sehirler = sorted(
             [
                 str(x).strip()
                 for x in df["Şehir"].dropna().unique()
-                if str(x).strip() != "" and not str(x).replace(".", "").isdigit()
+                if str(x).strip() not in ["", "nan", "Belirtilmedi"]
+                and not str(x).replace(".", "").isdigit()
             ]
         )
         secilen_sehirler = st.multiselect(
@@ -261,11 +258,16 @@ with st.container():
 
     with f2:
         st.caption("HANGİ ÜNİVERSİTE")
+        # .get() ve güvenli kontrol eklendi:
+        uni_series = (
+            df["Üniversite"] if "Üniversite" in df.columns else pd.Series([])
+        )
         universiteler = sorted(
             [
                 str(x).strip()
-                for x in df["Üniversite"].dropna().unique()
-                if str(x).strip() != "" and not str(x).replace(".", "").isdigit()
+                for x in uni_series.dropna().unique()
+                if str(x).strip() not in ["", "nan", "Belirtilmedi"]
+                and not str(x).replace(".", "").isdigit()
             ]
         )
         secilen_unis = st.multiselect(
@@ -277,11 +279,13 @@ with st.container():
 
     with f3:
         st.caption("HANGİ BÖLÜM")
+        bolum_series = df["Bölüm"] if "Bölüm" in df.columns else pd.Series([])
         bolumler = sorted(
             [
                 str(x).strip()
-                for x in df["Bölüm"].dropna().unique()
-                if str(x).strip() != "" and not str(x).replace(".", "").isdigit()
+                for x in bolum_series.dropna().unique()
+                if str(x).strip() not in ["", "nan", "Belirtilmedi"]
+                and not str(x).replace(".", "").isdigit()
             ]
         )
         secilen_bolumler = st.multiselect(
