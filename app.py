@@ -80,7 +80,7 @@ st.markdown(
     .stat-title {{ font-size: 11px; color: #ffed00; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }}
     .stat-value {{ font-size: 20px; color: #ffffff; font-weight: 800; margin-top: 2px; }}
 
-    /* Sadece Arama Butonunu Özelleştirme */
+    /* Arama Butonu Özel CSS */
     div.stElementContainer:has(button[key="btn_search_main"]) button {{
         background-color: #10b981 !important;
         color: #022c22 !important;
@@ -133,36 +133,65 @@ def norm(text):
 @st.cache_data
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
-    df.columns = df.columns.str.strip()
 
+    # 1. Çiftlenen sütun isimlerini temizle / tekleştir
+    cols = pd.Series(df.columns.astype(str).str.strip())
+    for dup in cols[cols.duplicated()].unique():
+        cols[cols[cols == dup].index.values.tolist()] = [
+            f"{dup}_{i}" if i != 0 else dup for i in range(sum(cols == dup))
+        ]
+    df.columns = cols
+
+    # 2. Akıllı sütun eşleme
     rename_mapping = {}
     for col in df.columns:
         c_low = norm(col)
-        if "universite" in c_low or "uni" in c_low:
+        if (
+            "universite" in c_low or "uni" in c_low
+        ) and "Üniversite" not in rename_mapping.values():
             rename_mapping[col] = "Üniversite"
-        elif "bolum" in c_low or "program" in c_low:
+        elif (
+            "bolum" in c_low or "program" in c_low
+        ) and "Bölüm" not in rename_mapping.values():
             rename_mapping[col] = "Bölüm"
-        elif "sira" in c_low or "2023" in c_low or "2024" in c_low:
+        elif (
+            "sira" in c_low or "2023" in c_low or "2024" in c_low
+        ) and "Sıralama" not in rename_mapping.values():
             rename_mapping[col] = "Sıralama"
-        elif "puan" in c_low or "tur" in c_low:
+        elif (
+            "puan" in c_low or "tur" in c_low
+        ) and "Puan_Türü" not in rename_mapping.values():
             rename_mapping[col] = "Puan_Türü"
-        elif c_low in ["sehir", "il", "il adi", "sehir adi"]:
+        elif (
+            c_low in ["sehir", "il", "il adi", "sehir adi"]
+        ) and "Şehir" not in rename_mapping.values():
             rename_mapping[col] = "Şehir"
-        elif "fakulte" in c_low:
+        elif "fakulte" in c_low and "Fakülte" not in rename_mapping.values():
             rename_mapping[col] = "Fakülte"
 
     df = df.rename(columns=rename_mapping)
 
+    # 3. Eksik sütunları tamamla
     for req in ["Üniversite", "Bölüm", "Sıralama", "Puan_Türü", "Şehir", "Fakülte"]:
         if req not in df.columns:
             df[req] = "Belirtilmedi"
 
-    df["Şehir"] = df["Şehir"].astype(str).replace(r"^\d+(\.\d+)?$", "", regex=True)
+    df = df.loc[:, ~df.columns.duplicated()]
+
+    df["Şehir"] = (
+        df["Şehir"].astype(str).replace(r"^\d+(\.\d+)?$", "", regex=True)
+    )
 
     # Sıralamayı Temizleme ve Sayısala Çevirme
     def siralama_temizle(val):
         try:
-            val_str = str(val).replace(".", "").replace(",", ".").replace(" ", "").strip()
+            val_str = (
+                str(val)
+                .replace(".", "")
+                .replace(",", ".")
+                .replace(" ", "")
+                .strip()
+            )
             return float(val_str)
         except:
             return None
@@ -457,8 +486,12 @@ with tab1:
                             type="secondary",
                         ):
                             st.session_state.tercihler = [
-                                t for t in st.session_state.tercihler
-                                if not (t["Üniversite"] == uni_adi and t["Bölüm"] == bolum_adi)
+                                t
+                                for t in st.session_state.tercihler
+                                if not (
+                                    t["Üniversite"] == uni_adi
+                                    and t["Bölüm"] == bolum_adi
+                                )
                             ]
                             st.rerun()
                     else:
