@@ -100,25 +100,6 @@ st.markdown(
         box-shadow: 0 6px 25px rgba(16, 185, 129, 0.8) !important;
     }}
 
-    /* HAZIR MISIN ONAY KUTUSU KART TASARIMI */
-    .ready-box {{
-        background: rgba(239, 68, 68, 0.15);
-        border: 2px solid #ef4444;
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 25px;
-        text-align: center;
-        backdrop-filter: blur(10px);
-    }}
-    .ready-title {{
-        color: #ff4d4d;
-        font-size: 22px;
-        font-weight: 900;
-        margin-bottom: 15px;
-        text-shadow: 0px 2px 10px rgba(239, 68, 68, 0.5);
-    }}
-
-    /* SARI NEON ÇERÇEVELİ BÜYÜK SKORBOARD RESMİ */
     .scoreboard-img {{
         width: 100%;
         max-width: 280px;
@@ -216,10 +197,8 @@ if "tercihler" not in st.session_state:
 if "arama_yapildi" not in st.session_state:
     st.session_state.arama_yapildi = False
 
-if "onaylandi" not in st.session_state:
-    st.session_state.onaylandi = False
 
-# --- BAŞLIKLAR & BÜYÜK SAĞ RESİM ---
+# --- BAŞLIKLAR & SAĞ RESİM ---
 head_col1, head_col2 = st.columns([7, 3])
 with head_col1:
     st.markdown(
@@ -301,30 +280,17 @@ with st.container():
 
     with f3:
         st.caption("HANGİ BÖLÜM")
-        # Benzersiz ana bölüm adlarını sadeleştirip çekiyoruz
-        bolumler = [
-            "İşletme",
-            "Uluslararası Ticaret",
-            "Bilgisayar Mühendisliği",
-            "Hukuk",
-            "Tıp",
-            "Yazılım Mühendisliği",
-            "İktisat",
-            "Mimarlık",
-            "Psikoloji",
-            "Hemşirelik",
-        ]
-        if "Bölüm" in df.columns:
-            ham_bolumler = sorted(
+        bolumler = (
+            sorted(
                 [
                     str(x)
                     for x in df["Bölüm"].dropna().unique()
                     if str(x).strip() != ""
                 ]
             )
-            if len(ham_bolumler) > 0:
-                bolumler = ham_bolumler
-
+            if "Bölüm" in df.columns
+            else []
+        )
         secilen_bolumler = st.multiselect(
             "Bölüm Seçin",
             bolumler,
@@ -353,7 +319,6 @@ with st.container():
     with btn_col2:
         if st.button("🚀 BUL LAN", key="btn_search_main", use_container_width=True):
             st.session_state.arama_yapildi = True
-            st.session_state.onaylandi = False
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -368,34 +333,16 @@ tab1, tab2 = st.tabs(
 with tab1:
     if not st.session_state.arama_yapildi:
         st.info("👈 Filtreleri ayarla, sonra yeşil BUL LAN butonuna bas!")
-    elif st.session_state.arama_yapildi and not st.session_state.onaylandi:
-        st.markdown(
-            """
-            <div class="ready-box">
-                <div class="ready-title">⚠️ OLM HAZIRMISIN BAK KENDİNİ MAL HİSSETME SONRA ⚠️</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        c_o1, c_o2, c_o3 = st.columns([4, 4, 4])
-        with c_o2:
-            if st.button(
-                "🔥 BOŞ YAPMA GÖSTER", key="btn_confirm", use_container_width=True
-            ):
-                st.session_state.onaylandi = True
-                st.rerun()
-
     else:
         temp_df = df.copy()
 
-        # 1. Puan Türü Filtresi
+        # Puan Türü Filtresi
         if secilen_puan != "TÜMÜ" and "Puan_Türü" in temp_df.columns:
             temp_df = temp_df[
                 temp_df["Puan_Türü"].astype(str).str.upper() == secilen_puan
             ]
 
-        # 2. Şehir Filtresi
+        # Şehir Filtresi
         if secilen_sehirler and "Şehir" in temp_df.columns:
             secilen_sehirler_tr = [tr_lower(s) for s in secilen_sehirler]
             temp_df = temp_df[
@@ -404,7 +351,7 @@ with tab1:
                 )
             ]
 
-        # 3. Üniversite Filtresi
+        # Üniversite Filtresi
         if secilen_unis and "Üniversite" in temp_df.columns:
             secilen_unis_tr = [tr_lower(u) for u in secilen_unis]
             temp_df = temp_df[
@@ -413,27 +360,24 @@ with tab1:
                 )
             ]
 
-        # 4. Bölüm Filtresi (Tam Eşleşme veya İçinde Geçme)
-        if secilen_bolumler and "Bölüm" in temp_df.columns:
-            secilen_bolumler_tr = [tr_lower(b) for b in secilen_bolumler]
-            temp_df = temp_df[
-                temp_df["Bölüm"].apply(
-                    lambda x: any(b in tr_lower(str(x)) for b in secilen_bolumler_tr)
-                )
-            ]
+        # Bölüm + Burs Akıllı Arama
+        # (Hem bölüm adında seçilen bölüm metnini hem de burs metnini esnek arar)
+        arama_metinleri = []
+        if secilen_bolumler:
+            arama_metinleri.extend([tr_lower(b) for b in secilen_bolumler])
+        if secilen_burslar:
+            arama_metinleri.extend([tr_lower(b) for b in secilen_burslar])
 
-        # 5. Burs / İndirim Filtresi (Metin İçinde Esnek Arama)
-        if secilen_burslar and "Bölüm" in temp_df.columns:
-            secilen_burslar_tr = [tr_lower(b) for b in secilen_burslar]
+        if arama_metinleri and "Bölüm" in temp_df.columns:
             temp_df = temp_df[
                 temp_df["Bölüm"].apply(
-                    lambda x: any(b in tr_lower(str(x)) for b in secilen_burslar_tr)
+                    lambda x: all(m in tr_lower(str(x)) for m in arama_metinleri)
                 )
             ]
 
         if temp_df.empty:
             st.warning(
-                "⚠️ Aradığın kriterlerde sonuç çıkmadı! Seçimleri biraz gevşetip (örneğin sadece Bölüm seçerek) tekrar 'BUL LAN'a bas."
+                "⚠️ Aradığın kriterlerde sonuç çıkmadı! Seçimlerden bazılarını kaldırıp (örneğin sadece Bölüm seçerek) tekrar 'BUL LAN'a bas."
             )
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
