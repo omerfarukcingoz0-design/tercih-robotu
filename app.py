@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-# Sayfa Yapılandırması (Marco Asensio & En Büyük Fener Teması)
+# Sayfa Yapılandırması
 st.set_page_config(
     page_title="Marco Asensio (enbüyük fener)",
     page_icon="💛💙",
@@ -11,11 +11,10 @@ st.set_page_config(
 # Resim URL'si
 bg_image_url = "https://img.piri.net/piri/upload/3/2026/5/25/d40fffbf-marco-asensio-kadroya-alindi-mi-ispanya-milli-takiminin-dunya-kupasi-kadrosu-belli-oldu.webp"
 
-# --- SARI-LACİVERT & ASENSIO GÖRSEL ARKA PLANLI CSS TASARIMI ---
+# --- CSS TASARIMI ---
 st.markdown(
     f"""
 <style>
-    /* Arka Plan: Marco Asensio Fotoğrafı + Karartma Kaplaması */
     .stApp {{
         background: linear-gradient(rgba(0, 12, 30, 0.85), rgba(0, 8, 20, 0.90)), url("{bg_image_url}");
         background-size: cover;
@@ -25,9 +24,8 @@ st.markdown(
         color: #ffffff;
     }}
     
-    /* Sarı & Lacivert Başlık Stili */
     .asensio-title {{
-        font-size: 42px;
+        font-size: 40px;
         font-weight: 900;
         background: linear-gradient(90deg, #ffed00, #ffffff);
         -webkit-background-clip: text;
@@ -38,14 +36,12 @@ st.markdown(
     
     .asensio-subtitle {{
         color: #ffed00;
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 700;
-        letter-spacing: 1px;
         margin-bottom: 25px;
         text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.8);
     }}
 
-    /* Üst Hero Arama Paneli */
     .hero-panel {{
         background: rgba(0, 26, 58, 0.75);
         border: 2px solid #ffed00;
@@ -56,7 +52,6 @@ st.markdown(
         backdrop-filter: blur(12px);
     }}
     
-    /* Kart Tasarımı (Sarı-Lacivert Detaylı) */
     .card {{
         background: rgba(10, 25, 47, 0.85);
         border: 1px solid rgba(255, 237, 0, 0.3);
@@ -68,12 +63,10 @@ st.markdown(
         backdrop-filter: blur(8px);
     }}
     
-    /* Rozetler */
     .badge-guvenli {{ background-color: #10b981; color: #ffffff; font-weight: bold; padding: 6px 16px; border-radius: 20px; font-size: 13px; display: inline-block; }}
     .badge-dengeli {{ background-color: #f59e0b; color: #ffffff; font-weight: bold; padding: 6px 16px; border-radius: 20px; font-size: 13px; display: inline-block; }}
     .badge-riskli {{ background-color: #ef4444; color: #ffffff; font-weight: bold; padding: 6px 16px; border-radius: 20px; font-size: 13px; display: inline-block; }}
     
-    /* İstatistik Kutuları */
     .stat-box {{
         background: rgba(0, 12, 30, 0.85);
         border-radius: 12px;
@@ -89,7 +82,6 @@ st.markdown(
 )
 
 
-# Veri Yükleme ve Sütun Yapısını Temizleme
 @st.cache_data
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
@@ -132,52 +124,49 @@ except Exception as e:
     st.stop()
 
 
-# Olasılık Hesabı
 def olasilik_hesapla(ogrenci_sira, bolum_sira):
     try:
         bolum_sira = float(bolum_sira)
         if pd.isna(bolum_sira) or bolum_sira <= 0:
-            return "RİSKLİ", "badge-riskli"
+            return "İMKANSIZ AGAM", "badge-riskli"
     except:
-        return "RİSKLİ", "badge-riskli"
+        return "İMKANSIZ AGAM", "badge-riskli"
 
     fark = ogrenci_sira - bolum_sira
 
     if fark <= -10000:
-        return "GÜVENLİ", "badge-guvenli"
+        return "GELİR BU", "badge-guvenli"
     elif -10000 < fark <= 5000:
-        return "DENGELİ", "badge-dengeli"
+        return "KISMET KANKA", "badge-dengeli"
     else:
-        return "RİSKLİ", "badge-riskli"
+        return "ZOR ZORTLARSIN", "badge-riskli"
 
 
 if "tercihler" not in st.session_state:
     st.session_state.tercihler = []
 
-# --- ÜST BAŞLIKLAR & ASENSIO İMZASI ---
+# --- SAMİMİ & TROLL BAŞLIKLAR ---
 st.markdown(
     '<div class="asensio-title">Marco Asensio (enbüyük fener)</div>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="asensio-subtitle">💛💙 Marco Asensio (enbüyük fener) Akıllı Analiz Portalı</div>',
+    '<div class="asensio-subtitle">💛💙 Kanka Tercih Robotu (Ağlama Masası)</div>',
     unsafe_allow_html=True,
 )
 
-# --- ÜST MODERN ARAMA PANELİ ---
 with st.container():
     st.markdown('<div class="hero-panel">', unsafe_allow_html=True)
 
-    # 1. Satır: Puan Türü + Sıralama Input
     c1, c2 = st.columns([6, 4])
     with c1:
-        st.caption("PUAN TÜRÜ")
+        st.caption("HANGİ ALANDAN PATLADIN?")
         puan_turleri = ["TÜMÜ", "SAY", "EA", "SÖZ", "DİL", "TYT"]
         secilen_puan = st.radio(
             "Puan Türü", puan_turleri, horizontal=True, label_visibility="collapsed"
         )
     with c2:
-        st.caption("BAŞARI SIRALAMAN")
+        st.caption("KAÇ SIRALAMA YAPTIN LAN ENAYİ?")
         ogrenci_sira = st.number_input(
             "Başarı Sıralaman",
             min_value=1,
@@ -188,10 +177,9 @@ with st.container():
 
     st.write("---")
 
-    # 2. Satır: Şehir, Üniversite Adı, Bölüm Adı
     f1, f2, f3 = st.columns(3)
     with f1:
-        st.caption("ŞEHİR SÜZGEÇİ")
+        st.caption("HANGİ ŞEHRE KAÇACAKSIN?")
         sehirler = (
             sorted(
                 [
@@ -206,51 +194,48 @@ with st.container():
         secilen_sehirler = st.multiselect(
             "Şehir Seçin",
             sehirler,
-            placeholder="Şehir Seçiniz...",
+            placeholder="Şehir falan seç...",
             label_visibility="collapsed",
         )
 
     with f2:
-        st.caption("ÜNİVERSİTE ARA")
+        st.caption("HANGİ ÜNİVERSİTE (SANKİ SENİ ALICAKLAR)")
         arama_uni = st.text_input(
             "Üniversite",
-            placeholder="Örn: Boğaziçi, Koç, İTÜ...",
+            placeholder="Örn: Boğaziçi, ODTÜ (Hayal Kurma)...",
             label_visibility="collapsed",
         )
 
     with f3:
-        st.caption("BÖLÜM ARA")
+        st.caption("SALLA BİR BÖLÜM OKUNUR MU BARİ?")
         arama_bolum = st.text_input(
             "Bölüm",
-            placeholder="Örn: Bilgisayar, İşletme...",
+            placeholder="Örn: Bilgisayar, Yazan Olursa...",
             label_visibility="collapsed",
         )
 
     st.write("---")
 
-    # 3. Satır: Durum Filtresi
     d1, d2, d3, d4 = st.columns([2, 2, 2, 4])
     with d1:
-        chk_guvenli = st.checkbox("🟢 GÜVENLİ", value=True)
+        chk_guvenli = st.checkbox("🟢 GELİR BU", value=True)
     with d2:
-        chk_dengeli = st.checkbox("🟡 DENGELİ", value=True)
+        chk_dengeli = st.checkbox("🟡 KISMET KANKA", value=True)
     with d3:
-        chk_riskli = st.checkbox("🔴 RİSKLİ", value=True)
+        chk_riskli = st.checkbox("🔴 ZOR ZORTLARSIN", value=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-# Durum Listesi
 secilen_durumlar = []
 if chk_guvenli:
-    secilen_durumlar.append("GÜVENLİ")
+    secilen_durumlar.append("GELİR BU")
 if chk_dengeli:
-    secilen_durumlar.append("DENGELİ")
+    secilen_durumlar.append("KISMET KANKA")
 if chk_riskli:
-    secilen_durumlar.append("RİSKLİ")
+    secilen_durumlar.append("ZOR ZORTLARSIN")
+    secilen_durumlar.append("İMKANSIZ AGAM")
 
-
-# --- FİLTRELEME MANTIĞI ---
 filtreli_df = pd.DataFrame()
 
 if (
@@ -286,11 +271,10 @@ if (
     filtreli_df = temp_df
 
 
-# --- LİSTELEME EKRANI ---
 tab1, tab2 = st.tabs(
     [
-        "🔍 Marco Asensio (enbüyük fener) - Sonuçlar",
-        "📋 Marco Asensio (enbüyük fener) - Listem",
+        "🔍 Sonuçlar (Umut Dünyası)",
+        "📋 Yandık Listesi (Kaydedilenler)",
     ]
 )
 
@@ -303,11 +287,11 @@ with tab1:
         and filtreli_df.empty
     ):
         st.info(
-            "👈 **Marco Asensio (enbüyük fener)** arama panelinden Bölüm, Üniversite veya Şehir seçerek sorgulama yapın."
+            "👈 Yukarıdan bir şeyler yaz da arayalım la, bomboş durma öyle!"
         )
     else:
         st.markdown(
-            f"### 📍 Marco Asensio (enbüyük fener) - **{len(filtreli_df)}** Program Buldu"
+            f"### 📍 Aha Sana **{len(filtreli_df)}** Tane Yer Buldum"
         )
 
         sira_col = "Sıralama" if "Sıralama" in filtreli_df.columns else "sıralama"
@@ -325,7 +309,6 @@ with tab1:
             sehir = row.get("Şehir", "")
             puan_turu = row.get("Puan_Türü", "")
 
-            # Kart Arayüzü
             st.markdown(
                 f"""
             <div class="card">
@@ -342,15 +325,15 @@ with tab1:
                 
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
                     <div class="stat-box">
-                        <div class="stat-title">TABAN SIRALAMASI</div>
+                        <div class="stat-title">KAÇLA KAPATMIŞ?</div>
                         <div class="stat-value" style="color: #ffed00;">{f"{int(bolum_sira):,}" if pd.notna(bolum_sira) and str(bolum_sira).isdigit() else bolum_sira}</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-title">PUAN TÜRÜ</div>
+                        <div class="stat-title">ALAN</div>
                         <div class="stat-value">{puan_turu}</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-title">ŞEHİR</div>
+                        <div class="stat-title">MEMLEKET</div>
                         <div class="stat-value">{sehir}</div>
                     </div>
                 </div>
@@ -359,7 +342,6 @@ with tab1:
                 unsafe_allow_html=True,
             )
 
-            # Tercih Ekle / Çıkar
             tercih_item = {
                 "Üniversite": uni_adi,
                 "Bölüm": bolum_adi,
@@ -372,7 +354,7 @@ with tab1:
             with c_btn1:
                 if tercih_item in st.session_state.tercihler:
                     if st.button(
-                        f"✓ Listede Ekli (Çıkar)",
+                        f"✓ Vazgeçtim At Bunu",
                         key=f"btn_rem_{idx}",
                         type="secondary",
                     ):
@@ -380,7 +362,7 @@ with tab1:
                         st.rerun()
                 else:
                     if st.button(
-                        f"➕ Tercih Listeme Ekle",
+                        f"➕ Yandık, Ekle Listeye",
                         key=f"btn_add_{idx}",
                         type="primary",
                     ):
@@ -391,10 +373,10 @@ with tab1:
 
 
 with tab2:
-    st.subheader("📌 Marco Asensio (enbüyük fener) - Özel Listeniz")
+    st.subheader("📌 Son Çare Tercih Listen")
 
     if not st.session_state.tercihler:
-        st.warning("Henüz listenize hiç bölüm eklemediniz.")
+        st.warning("Boş boş bakma kanka, bir iki bölüm ekle önce.")
     else:
         tercih_df = pd.DataFrame(st.session_state.tercihler)
         st.dataframe(tercih_df, use_container_width=True)
@@ -402,8 +384,8 @@ with tab2:
         csv_data = tercih_df.to_csv(index=False).encode("utf-8")
 
         st.download_button(
-            label="📥 Marco Asensio (enbüyük fener) Listesini İndir (Excel / CSV)",
+            label="📥 Çıktı Al Babana Göster (CSV İndir)",
             data=csv_data,
-            file_name="marco_asensio_tercih_listem.csv",
+            file_name="asensio_tercihlerim.csv",
             mime="text/csv",
         )
