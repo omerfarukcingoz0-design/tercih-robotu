@@ -128,9 +128,9 @@ def olasilik_hesapla(ogrenci_sira, bolum_sira):
     try:
         bolum_sira = float(bolum_sira)
         if pd.isna(bolum_sira) or bolum_sira <= 0:
-            return "İMKANSIZ AGAM", "badge-riskli"
+            return "NAH GİDERSİN", "badge-riskli"
     except:
-        return "İMKANSIZ AGAM", "badge-riskli"
+        return "NAH GİDERSİN", "badge-riskli"
 
     fark = ogrenci_sira - bolum_sira
 
@@ -139,13 +139,13 @@ def olasilik_hesapla(ogrenci_sira, bolum_sira):
     elif -10000 < fark <= 5000:
         return "KISMET KANKA", "badge-dengeli"
     else:
-        return "ZOR ZORTLARSIN", "badge-riskli"
+        return "NAH GİDERSİN", "badge-riskli"
 
 
 if "tercihler" not in st.session_state:
     st.session_state.tercihler = []
 
-# --- SAMİMİ & TROLL BAŞLIKLAR ---
+# --- BAŞLIKLAR ---
 st.markdown(
     '<div class="asensio-title">Marco Asensio (enbüyük fener)</div>',
     unsafe_allow_html=True,
@@ -160,13 +160,13 @@ with st.container():
 
     c1, c2 = st.columns([6, 4])
     with c1:
-        st.caption("HANGİ ALANDAN PATLADIN?")
+        st.caption("HANGİ ALANDAN PATLADIN")
         puan_turleri = ["TÜMÜ", "SAY", "EA", "SÖZ", "DİL", "TYT"]
         secilen_puan = st.radio(
             "Puan Türü", puan_turleri, horizontal=True, label_visibility="collapsed"
         )
     with c2:
-        st.caption("KAÇ SIRALAMA YAPTIN LAN ENAYİ?")
+        st.caption("KAÇ SIRALAMA YAPTIN LAN ENAYİ")
         ogrenci_sira = st.number_input(
             "Başarı Sıralaman",
             min_value=1,
@@ -179,7 +179,7 @@ with st.container():
 
     f1, f2, f3 = st.columns(3)
     with f1:
-        st.caption("HANGİ ŞEHRE KAÇACAKSIN?")
+        st.caption("HANGİ ŞEHİR (SANKİ İSTANBUL DIŞI GİDECEN)")
         sehirler = (
             sorted(
                 [
@@ -207,7 +207,7 @@ with st.container():
         )
 
     with f3:
-        st.caption("SALLA BİR BÖLÜM OKUNUR MU BARİ?")
+        st.caption("HANGİ BÖLÜM LAN OKUYACAN SANKİ")
         arama_bolum = st.text_input(
             "Bölüm",
             placeholder="Örn: Bilgisayar, Yazan Olursa...",
@@ -222,7 +222,7 @@ with st.container():
     with d2:
         chk_dengeli = st.checkbox("🟡 KISMET KANKA", value=True)
     with d3:
-        chk_riskli = st.checkbox("🔴 ZOR ZORTLARSIN", value=True)
+        chk_riskli = st.checkbox("🔴 NAH GİDERSİN", value=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -233,8 +233,7 @@ if chk_guvenli:
 if chk_dengeli:
     secilen_durumlar.append("KISMET KANKA")
 if chk_riskli:
-    secilen_durumlar.append("ZOR ZORTLARSIN")
-    secilen_durumlar.append("İMKANSIZ AGAM")
+    secilen_durumlar.append("NAH GİDERSİN")
 
 filtreli_df = pd.DataFrame()
 
@@ -325,7 +324,7 @@ with tab1:
                 
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
                     <div class="stat-box">
-                        <div class="stat-title">KAÇLA KAPATMIŞ?</div>
+                        <div class="stat-title">KAÇLA KAPATMIŞ</div>
                         <div class="stat-value" style="color: #ffed00;">{f"{int(bolum_sira):,}" if pd.notna(bolum_sira) and str(bolum_sira).isdigit() else bolum_sira}</div>
                     </div>
                     <div class="stat-box">
