@@ -347,10 +347,12 @@ with tab1:
     else:
         temp_df = df.copy()
 
-        # 1. Puan Türü Filtresi
+        # 1. Puan Türü Filtresi (Esnek Kontrol)
         if secilen_puan != "TÜMÜ" and "Puan_Türü" in temp_df.columns:
             temp_df = temp_df[
-                temp_df["Puan_Türü"].astype(str).str.upper() == secilen_puan
+                temp_df["Puan_Türü"]
+                .astype(str)
+                .apply(lambda x: secilen_puan in x.upper())
             ]
 
         # 2. Şehir Filtresi
@@ -375,24 +377,19 @@ with tab1:
                 )
             ]
 
-        # 4. Bölüm Filtresi (Kelime bazlı esnek arama)
+        # 4. Bölüm Filtresi
         if secilen_bolumler and "Bölüm" in temp_df.columns:
             secilen_bolumler_clean = [metin_temizle(b) for b in secilen_bolumler]
-            # Bölüm adındaki ana kelimeleri ayırıyoruz (Örn: Uluslararası Ticaret)
             temp_df = temp_df[
                 temp_df["Bölüm"].apply(
                     lambda x: any(
-                        all(
-                            k in metin_temizle(str(x))
-                            for k in b.split()
-                            if len(k) > 2
-                        )
+                        b in metin_temizle(str(x))
                         for b in secilen_bolumler_clean
                     )
                 )
             ]
 
-        # 5. Burs Filtresi (Akıllı YÖK Atlas Eşleştirici)
+        # 5. Burs Filtresi
         if secilen_burslar and "Bölüm" in temp_df.columns:
             burs_keywords = []
             for b in secilen_burslar:
@@ -417,12 +414,9 @@ with tab1:
                     )
                 ]
 
+        # Sadece temiz "Sonuç çıkmadı" uyarısı
         if temp_df.empty:
-            st.error(
-                "⚠️ **SONUÇ ÇIKMADI!**\n\n"
-                "**Sebebi:** Seçtiğin **Burs (%50 İndirimli)** veya **Bölüm ismi** YÖK Atlas CSV dosyasında tam olarak bu isimle yazmıyor olabilir.\n\n"
-                "👉 **Çözüm:** **'PARA VERCEK MİSİN (BURS DURUMU)'** kutusundaki çarpı (X) işaretine basıp burs filtresini kaldır, sadece Üniversite ve Bölüm seçip tekrar **BUL LAN** butonuna bas!"
-            )
+            st.warning("⚠️ Sonuç bulunamadı!")
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
 
