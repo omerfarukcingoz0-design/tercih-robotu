@@ -61,7 +61,7 @@ st.markdown(
         border-left: 5px solid #ffed00;
         border-radius: 16px;
         padding: 24px;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
         backdrop-filter: blur(8px);
     }}
@@ -80,7 +80,8 @@ st.markdown(
     .stat-title {{ font-size: 11px; color: #ffed00; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }}
     .stat-value {{ font-size: 20px; color: #ffffff; font-weight: 800; margin-top: 2px; }}
 
-    div.stButton > button {{
+    /* Sadece Arama Butonunu Özelleştirme */
+    div.stElementContainer:has(button[key="btn_search_main"]) button {{
         background-color: #10b981 !important;
         color: #022c22 !important;
         font-weight: 900 !important;
@@ -134,7 +135,6 @@ def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
     df.columns = df.columns.str.strip()
 
-    # Sütun isimlerini akıllı eşleme ile düzelt
     rename_mapping = {}
     for col in df.columns:
         c_low = norm(col)
@@ -153,14 +153,21 @@ def veri_yukle():
 
     df = df.rename(columns=rename_mapping)
 
-    # Zorunlu kolon kontrolü - Yoksa oluşturur patlamayı önler
-    for req in ["Üniversite", "Bölüm", "Sıralama", "Puan_Türü", "Şehir"]:
+    for req in ["Üniversite", "Bölüm", "Sıralama", "Puan_Türü", "Şehir", "Fakülte"]:
         if req not in df.columns:
             df[req] = "Belirtilmedi"
 
-    # Şehir sütunundaki sayısal değerleri veya boşlukları temizle
     df["Şehir"] = df["Şehir"].astype(str).replace(r"^\d+(\.\d+)?$", "", regex=True)
 
+    # Sıralamayı Temizleme ve Sayısala Çevirme
+    def siralama_temizle(val):
+        try:
+            val_str = str(val).replace(".", "").replace(",", ".").replace(" ", "").strip()
+            return float(val_str)
+        except:
+            return None
+
+    df["Sıralama_Sayisal"] = df["Sıralama"].apply(siralama_temizle)
     return df
 
 
@@ -172,17 +179,7 @@ except Exception as e:
 
 
 def olasilik_hesapla(ogrenci_sira, bolum_sira):
-    try:
-        bolum_sira = float(
-            str(bolum_sira)
-            .replace(".", "")
-            .replace(",", ".")
-            .replace(" ", "")
-            .strip()
-        )
-        if pd.isna(bolum_sira) or bolum_sira <= 0:
-            return "NAH GİDERSİN", "badge-riskli"
-    except:
+    if pd.isna(bolum_sira) or bolum_sira is None or bolum_sira <= 0:
         return "NAH GİDERSİN", "badge-riskli"
 
     fark = ogrenci_sira - bolum_sira
@@ -258,10 +255,7 @@ with st.container():
 
     with f2:
         st.caption("HANGİ ÜNİVERSİTE")
-        # .get() ve güvenli kontrol eklendi:
-        uni_series = (
-            df["Üniversite"] if "Üniversite" in df.columns else pd.Series([])
-        )
+        uni_series = df["Üniversite"]
         universiteler = sorted(
             [
                 str(x).strip()
@@ -279,7 +273,7 @@ with st.container():
 
     with f3:
         st.caption("HANGİ BÖLÜM")
-        bolum_series = df["Bölüm"] if "Bölüm" in df.columns else pd.Series([])
+        bolum_series = df["Bölüm"]
         bolumler = sorted(
             [
                 str(x).strip()
@@ -393,11 +387,14 @@ with tab1:
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
 
+            # Sonuçları sıralamaya göre sıralayıp ilk 100'ü göster
+            temp_df = temp_df.sort_values(by="Sıralama_Sayisal", ascending=True)
             gosterilecek_df = temp_df.head(100)
 
-            for idx, row in gosterilecek_df.iterrows():
-                bolum_sira = row.get("Sıralama", 0)
-                durum, badge_class = olasilik_hesapla(ogrenci_sira, bolum_sira)
+            for idx, row in gosterilecek_df.reset_index(drop=True).iterrows():
+                bolum_sira_num = row.get("Sıralama_Sayisal", None)
+                bolum_sira_str = row.get("Sıralama", "Belirtilmedi")
+                durum, badge_class = olasilik_hesapla(ogrenci_sira, bolum_sira_num)
 
                 uni_adi = row.get("Üniversite", "Belirtilmedi")
                 bolum_adi = row.get("Bölüm", "Belirtilmedi")
@@ -422,7 +419,7 @@ with tab1:
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
                         <div class="stat-box">
                             <div class="stat-title">KAÇLA KAPATMIŞ</div>
-                            <div class="stat-value" style="color: #ffed00;">{bolum_sira}</div>
+                            <div class="stat-value" style="color: #ffed00;">{bolum_sira_str}</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-title">ALAN</div>
@@ -442,19 +439,27 @@ with tab1:
                     "Üniversite": uni_adi,
                     "Bölüm": bolum_adi,
                     "Şehir": sehir,
-                    "Sıralama": bolum_sira,
+                    "Sıralama": bolum_sira_str,
                     "Durum": durum,
                 }
 
                 c_btn1, _ = st.columns([3, 7])
                 with c_btn1:
-                    if tercih_item in st.session_state.tercihler:
+                    zaten_ekli = any(
+                        t["Üniversite"] == uni_adi and t["Bölüm"] == bolum_adi
+                        for t in st.session_state.tercihler
+                    )
+
+                    if zaten_ekli:
                         if st.button(
                             f"✓ Vazgeçtim At Bunu",
                             key=f"btn_rem_{idx}",
                             type="secondary",
                         ):
-                            st.session_state.tercihler.remove(tercih_item)
+                            st.session_state.tercihler = [
+                                t for t in st.session_state.tercihler
+                                if not (t["Üniversite"] == uni_adi and t["Bölüm"] == bolum_adi)
+                            ]
                             st.rerun()
                     else:
                         if st.button(
