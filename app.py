@@ -8,8 +8,11 @@ st.set_page_config(
     layout="wide",
 )
 
-# Resim URL'si
+# Resim URL'leri
 bg_image_url = "https://img.piri.net/piri/upload/3/2026/5/25/d40fffbf-marco-asensio-kadroya-alindi-mi-ispanya-milli-takiminin-dunya-kupasi-kadrosu-belli-oldu.webp"
+small_logo_url = (
+    "https://image.fanatik.com.tr/i/fanatik/75/0x410/66ebd8349321aeccbdc731f7.jpg"
+)
 
 # --- CSS TASARIMI ---
 st.markdown(
@@ -114,6 +117,16 @@ st.markdown(
         margin-bottom: 15px;
         text-shadow: 0px 2px 10px rgba(239, 68, 68, 0.5);
     }}
+
+    /* KÜÇÜK GÖRSEL STİLİ */
+    .small-avatar {{
+        width: 85px;
+        height: 85px;
+        border-radius: 16px;
+        object-fit: cover;
+        border: 2px solid #ffed00;
+        box-shadow: 0 4px 15px rgba(255, 237, 0, 0.3);
+    }}
 </style>
 """,
     unsafe_allow_html=True,
@@ -204,15 +217,22 @@ if "arama_yapildi" not in st.session_state:
 if "onaylandi" not in st.session_state:
     st.session_state.onaylandi = False
 
-# --- BAŞLIKLAR ---
-st.markdown(
-    '<div class="asensio-title">Marco Asensio (enbüyük fener)</div>',
-    unsafe_allow_html=True,
-)
-st.markdown(
-    '<div class="asensio-subtitle">💛💙 Tercih Robotu (Ağlama Masası)</div>',
-    unsafe_allow_html=True,
-)
+# --- BAŞLIKLAR & KÜÇÜK RESİM ---
+head_col1, head_col2 = st.columns([8.5, 1.5])
+with head_col1:
+    st.markdown(
+        '<div class="asensio-title">Marco Asensio (enbüyük fener)</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="asensio-subtitle">💛💙 Tercih Robotu (Ağlama Masası)</div>',
+        unsafe_allow_html=True,
+    )
+with head_col2:
+    st.markdown(
+        f'<img src="{small_logo_url}" class="small-avatar">',
+        unsafe_allow_html=True,
+    )
 
 with st.container():
     st.markdown('<div class="hero-panel">', unsafe_allow_html=True)
@@ -312,7 +332,7 @@ with st.container():
     with btn_col2:
         if st.button("🚀 BUL LAN", key="btn_search_main", use_container_width=True):
             st.session_state.arama_yapildi = True
-            st.session_state.onaylandi = False  # Her yeni aramada onayı sıfırla
+            st.session_state.onaylandi = False
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -328,7 +348,6 @@ with tab1:
     if not st.session_state.arama_yapildi:
         st.info("👈 Filtreleri ayarla, sonra yeşil BUL LAN butonuna bas!")
     elif st.session_state.arama_yapildi and not st.session_state.onaylandi:
-        # ARAMA YAPILDI AMA SORGULAMA PANERİ ÇIKACAK
         st.markdown(
             """
             <div class="ready-box">
@@ -340,12 +359,13 @@ with tab1:
 
         c_o1, c_o2, c_o3 = st.columns([4, 4, 4])
         with c_o2:
-            if st.button("🔥 GÖSTER ULAN!", key="btn_confirm", use_container_width=True):
+            if st.button(
+                "🔥 BOŞ YAPMA GÖSTER", key="btn_confirm", use_container_width=True
+            ):
                 st.session_state.onaylandi = True
                 st.rerun()
 
     else:
-        # ONAY VERİLDİKTEN SONRA LİSTE GELİYOR
         temp_df = df.copy()
 
         # Puan Türü Filtresi
