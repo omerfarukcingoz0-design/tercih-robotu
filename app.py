@@ -260,24 +260,6 @@ tab1, tab2 = st.tabs(
 )
 
 with tab1:
-    d1, d2, d3, _ = st.columns([2, 2, 2, 4])
-    with d1:
-        chk_guvenli = st.checkbox("🟢 GELİR BU", value=True)
-    with d2:
-        chk_dengeli = st.checkbox("🟡 KISMET KANKA", value=True)
-    with d3:
-        chk_riskli = st.checkbox("🔴 NAH GİDERSİN", value=True)
-
-    secilen_durumlar = []
-    if chk_guvenli:
-        secilen_durumlar.append("GELİR BU")
-    if chk_dengeli:
-        secilen_durumlar.append("KISMET KANKA")
-    if chk_riskli:
-        secilen_durumlar.append("NAH GİDERSİN")
-
-    st.write("---")
-
     if (
         not arama_uni
         and not arama_bolum
@@ -298,9 +280,6 @@ with tab1:
         for idx, row in filtreli_df.iterrows():
             bolum_sira = row.get(sira_col, 0)
             durum, badge_class = olasilik_hesapla(ogrenci_sira, bolum_sira)
-
-            if durum not in secilen_durumlar:
-                continue
 
             uni_adi = row.get("Üniversite", "Üniversite Belirtilmemiş")
             bolum_adi = row.get("Bölüm", "Bölüm Belirtilmemiş")
