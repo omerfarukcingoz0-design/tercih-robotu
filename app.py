@@ -82,6 +82,21 @@ st.markdown(
 )
 
 
+def tr_lower(text):
+    if not isinstance(text, str):
+        return ""
+    return (
+        text.replace("İ", "i")
+        .replace("I", "ı")
+        .replace("Ğ", "ğ")
+        .replace("Ü", "ü")
+        .replace("Ş", "ş")
+        .replace("Ö", "ö")
+        .replace("Ç", "ç")
+        .lower()
+    )
+
+
 @st.cache_data
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
@@ -202,7 +217,7 @@ with st.container():
         st.caption("HANGİ ÜNİVERSİTE (SANKİ SENİ ALICAKLAR)")
         arama_uni = st.text_input(
             "Üniversite",
-            placeholder="Örn: Boğaziçi, ODTÜ (Hayal Kurma)...",
+            placeholder="Örn: Beykent, ODTÜ...",
             label_visibility="collapsed",
         )
 
@@ -210,7 +225,7 @@ with st.container():
         st.caption("HANGİ BÖLÜM LAN OKUYACAN SANKİ")
         arama_bolum = st.text_input(
             "Bölüm",
-            placeholder="Örn: Bilgisayar, Yazan Olursa...",
+            placeholder="Örn: İşletme, Bilgisayar...",
             label_visibility="collapsed",
         )
 
@@ -219,34 +234,40 @@ with st.container():
 
 filtreli_df = pd.DataFrame()
 
+# Filtreleme Başlangıcı
 if (
-    arama_uni
-    or arama_bolum
+    arama_uni.strip()
+    or arama_bolum.strip()
     or secilen_sehirler
     or (secilen_puan != "TÜMÜ")
 ):
     temp_df = df.copy()
 
+    # Puan Türü Filtresi
     if secilen_puan != "TÜMÜ" and "Puan_Türü" in temp_df.columns:
         temp_df = temp_df[
             temp_df["Puan_Türü"].astype(str).str.upper() == secilen_puan
         ]
 
+    # Şehir Filtresi
     if secilen_sehirler and "Şehir" in temp_df.columns:
-        temp_df = temp_df[temp_df["Şehir"].astype(str).isin(secilen_sehirler)]
-
-    if arama_uni and "Üniversite" in temp_df.columns:
+        secilen_sehirler_tr = [tr_lower(s) for s in secilen_sehirler]
         temp_df = temp_df[
-            temp_df["Üniversite"]
-            .astype(str)
-            .str.contains(arama_uni, case=False, na=False)
+            temp_df["Şehir"].apply(lambda x: tr_lower(str(x)) in secilen_sehirler_tr)
         ]
 
-    if arama_bolum and "Bölüm" in temp_df.columns:
+    # Üniversite Filtresi
+    if arama_uni.strip() and "Üniversite" in temp_df.columns:
+        uni_query = tr_lower(arama_uni.strip())
         temp_df = temp_df[
-            temp_df["Bölüm"]
-            .astype(str)
-            .str.contains(arama_bolum, case=False, na=False)
+            temp_df["Üniversite"].apply(lambda x: uni_query in tr_lower(str(x)))
+        ]
+
+    # Bölüm Filtresi
+    if arama_bolum.strip() and "Bölüm" in temp_df.columns:
+        bolum_query = tr_lower(arama_bolum.strip())
+        temp_df = temp_df[
+            temp_df["Bölüm"].apply(lambda x: bolum_query in tr_lower(str(x)))
         ]
 
     filtreli_df = temp_df
@@ -261,14 +282,17 @@ tab1, tab2 = st.tabs(
 
 with tab1:
     if (
-        not arama_uni
-        and not arama_bolum
+        not arama_uni.strip()
+        and not arama_bolum.strip()
         and not secilen_sehirler
         and secilen_puan == "TÜMÜ"
-        and filtreli_df.empty
     ):
         st.info(
-            "👈 Yukarıdan bir şeyler yaz da arayalım la, bomboş durma öyle!"
+            "👈 Yukarıdan bir şehir seç, üniversite veya bölüm yaz; sonuçlar patır patır dökülsün!"
+        )
+    elif filtreli_df.empty:
+        st.warning(
+            "⚠️ Kanka aradığın kriterlerde hiçbir şey bulunamadı. Aramanı biraz daraltmış olabilirsin (örneğin sadece Bölüm adını yazıp Şehir/Üni kutusunu boş bırakıp dene)."
         )
     else:
         st.markdown(
@@ -277,7 +301,10 @@ with tab1:
 
         sira_col = "Sıralama" if "Sıralama" in filtreli_df.columns else "sıralama"
 
-        for idx, row in filtreli_df.iterrows():
+        # İlk 100 sonucu gösterelim ki performans düşmesin
+        gosterilecek_df = filtreli_df.head(100)
+
+        for idx, row in gosterilecek_df.iterrows():
             bolum_sira = row.get(sira_col, 0)
             durum, badge_class = olasilik_hesapla(ogrenci_sira, bolum_sira)
 
@@ -304,7 +331,7 @@ with tab1:
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
                     <div class="stat-box">
                         <div class="stat-title">KAÇLA KAPATMIŞ</div>
-                        <div class="stat-value" style="color: #ffed00;">{f"{int(bolum_sira):,}" if pd.notna(bolum_sira) and str(bolum_sira).isdigit() else bolum_sira}</div>
+                        <div class="stat-value" style="color: #ffed00;">{f"{int(bolum_sira):,}" if pd.notna(bolum_sira) and str(bolum_sira).replace('.','',1).isdigit() else bolum_sira}</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-title">ALAN</div>
