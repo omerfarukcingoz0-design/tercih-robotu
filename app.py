@@ -9,13 +9,12 @@ st.set_page_config(
     layout="wide",
 )
 
-# Resim URL'leri
 bg_image_url = "https://img.piri.net/piri/upload/3/2026/5/25/d40fffbf-marco-asensio-kadroya-alindi-mi-ispanya-milli-takiminin-dunya-kupasi-kadrosu-belli-oldu.webp"
 small_logo_url = (
     "https://image.fanatik.com.tr/i/fanatik/75/0x410/66ebd8349321aeccbdc731f7.jpg"
 )
 
-# --- CSS TASARIMI ---
+# CSS TASARIMI
 st.markdown(
     f"""
 <style>
@@ -93,12 +92,6 @@ st.markdown(
         transition: all 0.3s ease !important;
         width: 100% !important;
     }}
-    div.stButton > button:hover {{
-        background-color: #059669 !important;
-        color: #ffffff !important;
-        transform: scale(1.02);
-        box-shadow: 0 6px 25px rgba(16, 185, 129, 0.8) !important;
-    }}
 
     .scoreboard-img {{
         width: 100%;
@@ -106,7 +99,7 @@ st.markdown(
         height: auto;
         border-radius: 20px;
         border: 3px solid #ffed00;
-        box-shadow: 0 0 20px rgba(255, 237, 0, 0.6), inset 0 0 10px rgba(255, 237, 0, 0.4);
+        box-shadow: 0 0 20px rgba(255, 237, 0, 0.6);
         display: block;
         margin-left: auto;
     }}
@@ -116,7 +109,8 @@ st.markdown(
 )
 
 
-def metin_temizle(text):
+def norm(text):
+    """Metinleri Türkçe karaktersiz ve küçük harfe çevirir (Esnek arama için)"""
     if not isinstance(text, str):
         return ""
     text = (
@@ -139,42 +133,68 @@ def metin_temizle(text):
 @st.cache_data
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
-    df.columns = [str(col).strip().lower() for col in df.columns]
 
-    def sutun_bul(anahtar_kelimeler):
-        for col in df.columns:
-            if any(k in col for k in anahtar_kelimeler):
-                return col
-        return None
+    # Sütun isimlerini akıllıca yakala
+    cols = {str(c).strip(): str(c).strip().lower() for c in df.columns}
 
-    uni_col = sutun_bul(["uni", "üniversite", "universite"])
-    bolum_col = sutun_bul(["isim", "program", "bölüm", "bolum"])
-    sira_col = sutun_bul(["sira", "sıra"])
-    puan_col = sutun_bul(["tur", "tür", "puan"])
-    sehir_col = sutun_bul(["il", "sehir", "şehir"])
-    fakulte_col = sutun_bul(["fakulte", "fakülte"])
+    uni_col, bolum_col, sira_col, puan_col, sehir_col, fakulte_col = (
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
 
-    renames = {}
+    for orig, low in cols.items():
+        if any(
+            k in low
+            for k in ["uni", "üniversite", "universite", "üniversite adı"]
+        ):
+            uni_col = orig
+        elif any(
+            k in low for k in ["bölüm", "bolum", "program", "program adı"]
+        ):
+            bolum_col = orig
+        elif any(
+            k in low for k in ["sıra", "sira", "başarı sıralaması", "2023"]
+        ):
+            sira_col = orig
+        elif any(k in low for k in ["puan", "tür", "tur", "puan türü"]):
+            puan_col = orig
+        elif any(k in low for k in ["şehir", "sehir", "il"]):
+            sehir_col = orig
+        elif any(k in low for k in ["fakülte", "fakulte"]):
+            fakulte_col = orig
+
+    rename_dict = {}
     if uni_col:
-        renames[uni_col] = "Üniversite"
+        rename_dict[uni_col] = "Üniversite"
     if bolum_col:
-        renames[bolum_col] = "Bölüm"
+        rename_dict[bolum_col] = "Bölüm"
     if sira_col:
-        renames[sira_col] = "Sıralama"
+        rename_dict[sira_col] = "Sıralama"
     if puan_col:
-        renames[puan_col] = "Puan_Türü"
+        rename_dict[puan_col] = "Puan_Türü"
     if sehir_col:
-        renames[sehir_col] = "Şehir"
+        rename_dict[sehir_col] = "Şehir"
     if fakulte_col:
-        renames[fakulte_col] = "Fakülte"
+        rename_dict[fakulte_col] = "Fakülte"
 
-    return df.rename(columns=renames)
+    df = df.rename(columns=rename_dict)
+
+    # Olmayan kritik sütunlar varsa boş sütun oluştur patlamasın
+    for req in ["Üniversite", "Bölüm", "Sıralama", "Puan_Türü", "Şehir"]:
+        if req not in df.columns:
+            df[req] = ""
+
+    return df
 
 
 try:
     df = veri_yukle()
 except Exception as e:
-    st.error(f"Veri yüklenemedi: {e}")
+    st.error(f"CSV Yüklenirken Hata Oluştu: {e}")
     st.stop()
 
 
@@ -193,7 +213,6 @@ def olasilik_hesapla(ogrenci_sira, bolum_sira):
         return "NAH GİDERSİN", "badge-riskli"
 
     fark = ogrenci_sira - bolum_sira
-
     if fark <= -10000:
         return "GELİR BU", "badge-guvenli"
     elif -10000 < fark <= 5000:
@@ -204,12 +223,10 @@ def olasilik_hesapla(ogrenci_sira, bolum_sira):
 
 if "tercihler" not in st.session_state:
     st.session_state.tercihler = []
-
 if "arama_yapildi" not in st.session_state:
     st.session_state.arama_yapildi = False
 
-
-# --- BAŞLIKLAR & SAĞ RESİM ---
+# BAŞLIK
 head_col1, head_col2 = st.columns([7, 3])
 with head_col1:
     st.markdown(
@@ -251,16 +268,12 @@ with st.container():
     f1, f2, f3, f4 = st.columns(4)
     with f1:
         st.caption("HANGİ ŞEHİR")
-        sehirler = (
-            sorted(
-                [
-                    str(x)
-                    for x in df["Şehir"].dropna().unique()
-                    if str(x).strip() != ""
-                ]
-            )
-            if "Şehir" in df.columns
-            else []
+        sehirler = sorted(
+            [
+                str(x)
+                for x in df["Şehir"].dropna().unique()
+                if str(x).strip() != ""
+            ]
         )
         secilen_sehirler = st.multiselect(
             "Şehir Seçin",
@@ -271,16 +284,12 @@ with st.container():
 
     with f2:
         st.caption("HANGİ ÜNİVERSİTE")
-        universiteler = (
-            sorted(
-                [
-                    str(x)
-                    for x in df["Üniversite"].dropna().unique()
-                    if str(x).strip() != ""
-                ]
-            )
-            if "Üniversite" in df.columns
-            else []
+        universiteler = sorted(
+            [
+                str(x)
+                for x in df["Üniversite"].dropna().unique()
+                if str(x).strip() != ""
+            ]
         )
         secilen_unis = st.multiselect(
             "Üniversite Seçin",
@@ -291,16 +300,12 @@ with st.container():
 
     with f3:
         st.caption("HANGİ BÖLÜM")
-        bolumler = (
-            sorted(
-                [
-                    str(x)
-                    for x in df["Bölüm"].dropna().unique()
-                    if str(x).strip() != ""
-                ]
-            )
-            if "Bölüm" in df.columns
-            else []
+        bolumler = sorted(
+            [
+                str(x)
+                for x in df["Bölüm"].dropna().unique()
+                if str(x).strip() != ""
+            ]
         )
         secilen_bolumler = st.multiselect(
             "Bölüm Seçin",
@@ -333,12 +338,8 @@ with st.container():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-
 tab1, tab2 = st.tabs(
-    [
-        "🔍 SONUÇLAR ALLAH BÜYÜK",
-        "📋 Yandık Listesi (Kaydedilenler)",
-    ]
+    ["🔍 SONUÇLAR ALLAH BÜYÜK", "📋 Yandık Listesi (Kaydedilenler)"]
 )
 
 with tab1:
@@ -347,88 +348,79 @@ with tab1:
     else:
         temp_df = df.copy()
 
-        # 1. Puan Türü Filtresi (Esnek Kontrol)
-        if secilen_puan != "TÜMÜ" and "Puan_Türü" in temp_df.columns:
+        # 1. Puan Türü Filtresi
+        if secilen_puan != "TÜMÜ":
+            p_target = norm(secilen_puan)
             temp_df = temp_df[
                 temp_df["Puan_Türü"]
                 .astype(str)
-                .apply(lambda x: secilen_puan in x.upper())
+                .apply(lambda x: p_target in norm(x))
             ]
 
         # 2. Şehir Filtresi
-        if secilen_sehirler and "Şehir" in temp_df.columns:
-            secilen_sehirler_clean = [metin_temizle(s) for s in secilen_sehirler]
+        if secilen_sehirler:
+            s_targets = [norm(s) for s in secilen_sehirler]
             temp_df = temp_df[
                 temp_df["Şehir"].apply(
-                    lambda x: any(
-                        s in metin_temizle(str(x)) for s in secilen_sehirler_clean
-                    )
+                    lambda x: any(starg in norm(str(x)) for starg in s_targets)
                 )
             ]
 
         # 3. Üniversite Filtresi
-        if secilen_unis and "Üniversite" in temp_df.columns:
-            secilen_unis_clean = [metin_temizle(u) for u in secilen_unis]
+        if secilen_unis:
+            u_targets = [norm(u) for u in secilen_unis]
             temp_df = temp_df[
                 temp_df["Üniversite"].apply(
-                    lambda x: any(
-                        u in metin_temizle(str(x)) for u in secilen_unis_clean
-                    )
+                    lambda x: any(utarg in norm(str(x)) for utarg in u_targets)
                 )
             ]
 
         # 4. Bölüm Filtresi
-        if secilen_bolumler and "Bölüm" in temp_df.columns:
-            secilen_bolumler_clean = [metin_temizle(b) for b in secilen_bolumler]
+        if secilen_bolumler:
+            b_targets = [norm(b) for b in secilen_bolumler]
             temp_df = temp_df[
                 temp_df["Bölüm"].apply(
-                    lambda x: any(
-                        b in metin_temizle(str(x))
-                        for b in secilen_bolumler_clean
-                    )
+                    lambda x: any(btarg in norm(str(x)) for btarg in b_targets)
                 )
             ]
 
         # 5. Burs Filtresi
-        if secilen_burslar and "Bölüm" in temp_df.columns:
+        if secilen_burslar:
             burs_keywords = []
             for b in secilen_burslar:
-                b_clean = metin_temizle(b)
-                if "50" in b_clean:
+                b_norm = norm(b)
+                if "50" in b_norm:
                     burs_keywords.append("50")
-                elif "25" in b_clean:
+                elif "25" in b_norm:
                     burs_keywords.append("25")
-                elif "burslu" in b_clean:
+                elif "burslu" in b_norm:
                     burs_keywords.append("burslu")
-                elif "ucretli" in b_clean:
+                elif "ucretli" in b_norm:
                     burs_keywords.append("ucretli")
-                elif "ucretsiz" in b_clean:
+                elif "ucretsiz" in b_norm:
                     burs_keywords.append("ucretsiz")
 
             if burs_keywords:
                 temp_df = temp_df[
                     temp_df["Bölüm"].apply(
-                        lambda x: any(
-                            k in metin_temizle(str(x)) for k in burs_keywords
-                        )
+                        lambda x: any(k in norm(str(x)) for k in burs_keywords)
                     )
                 ]
 
-        # Sadece temiz "Sonuç çıkmadı" uyarısı
+        # YANLIZCA İSTEDİĞİN SADE UYARI
         if temp_df.empty:
-            st.warning("⚠️ Sonuç bulunamadı!")
+            st.warning("⚠️ Sonuç çıkmadı!")
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
 
-            sira_col = "Sıralama" if "Sıralama" in temp_df.columns else "sıralama"
             gosterilecek_df = temp_df.head(100)
 
             for idx, row in gosterilecek_df.iterrows():
-                bolum_sira = row.get(sira_col, 0)
+                bolum_sira = row.get("Sıralama", 0)
                 durum, badge_class = olasilik_hesapla(ogrenci_sira, bolum_sira)
 
-                uni_adi = row.get("Üniversite", "Üniversite Belirtilmemiş")
-                bolum_adi = row.get("Bölüm", "Bölüm Belirtilmemiş")
+                uni_adi = row.get("Üniversite", "Belirtilmedi")
+                bolum_adi = row.get("Bölüm", "Belirtilmedi")
                 fakulte = row.get("Fakülte", "")
                 sehir = row.get("Şehir", "")
                 puan_turu = row.get("Puan_Türü", "")
@@ -494,7 +486,6 @@ with tab1:
                             st.rerun()
 
                 st.write("")
-
 
 with tab2:
     st.subheader("📌 Son Çare Tercih Listen")
