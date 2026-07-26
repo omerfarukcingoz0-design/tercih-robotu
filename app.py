@@ -232,23 +232,47 @@ with st.container():
         secilen_sehirler = st.multiselect(
             "Şehir Seçin",
             sehirler,
-            placeholder="Şehir falan seç...",
+            placeholder="Şehir seç...",
             label_visibility="collapsed",
         )
 
     with f2:
         st.caption("HANGİ ÜNİVERSİTE")
-        arama_uni = st.text_input(
-            "Üniversite",
-            placeholder="Örn: Beykent, ODTÜ...",
+        universiteler = (
+            sorted(
+                [
+                    str(x)
+                    for x in df["Üniversite"].dropna().unique()
+                    if str(x).strip() != ""
+                ]
+            )
+            if "Üniversite" in df.columns
+            else []
+        )
+        secilen_unis = st.multiselect(
+            "Üniversite Seçin",
+            universiteler,
+            placeholder="Üni seç veya yaz...",
             label_visibility="collapsed",
         )
 
     with f3:
         st.caption("HANGİ BÖLÜM")
-        arama_bolum = st.text_input(
-            "Bölüm",
-            placeholder="Örn: İşletme, Bilgisayar...",
+        bolumler = (
+            sorted(
+                [
+                    str(x)
+                    for x in df["Bölüm"].dropna().unique()
+                    if str(x).strip() != ""
+                ]
+            )
+            if "Bölüm" in df.columns
+            else []
+        )
+        secilen_bolumler = st.multiselect(
+            "Bölüm Seçin",
+            bolumler,
+            placeholder="Bölüm seç veya yaz...",
             label_visibility="collapsed",
         )
 
@@ -297,18 +321,22 @@ with tab1:
                 )
             ]
 
-        # Üniversite Filtresi
-        if arama_uni.strip() and "Üniversite" in temp_df.columns:
-            uni_query = tr_lower(arama_uni.strip())
+        # Üniversite Filtresi (Açılır Liste Çoklu Seçim)
+        if secilen_unis and "Üniversite" in temp_df.columns:
+            secilen_unis_tr = [tr_lower(u) for u in secilen_unis]
             temp_df = temp_df[
-                temp_df["Üniversite"].apply(lambda x: uni_query in tr_lower(str(x)))
+                temp_df["Üniversite"].apply(
+                    lambda x: any(u in tr_lower(str(x)) for u in secilen_unis_tr)
+                )
             ]
 
-        # Bölüm Filtresi
-        if arama_bolum.strip() and "Bölüm" in temp_df.columns:
-            bolum_query = tr_lower(arama_bolum.strip())
+        # Bölüm Filtresi (Açılır Liste Çoklu Seçim)
+        if secilen_bolumler and "Bölüm" in temp_df.columns:
+            secilen_bolumler_tr = [tr_lower(b) for b in secilen_bolumler]
             temp_df = temp_df[
-                temp_df["Bölüm"].apply(lambda x: bolum_query in tr_lower(str(x)))
+                temp_df["Bölüm"].apply(
+                    lambda x: any(b in tr_lower(str(x)) for b in secilen_bolumler_tr)
+                )
             ]
 
         # Burs / İndirim Filtresi
@@ -320,7 +348,7 @@ with tab1:
 
         if temp_df.empty:
             st.warning(
-                "⚠️ Kanka aradığın kriterlerde sonuç çıkmadı! Filtreleri veya Burs seçimini (TÜMÜ yaparak) tekrar kontrol et."
+                "⚠️ Kanka aradığın kriterlerde sonuç çıkmadı! Seçimleri biraz gevşetip tekrar 'BUL LAN'a bas."
             )
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
