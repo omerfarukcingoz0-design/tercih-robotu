@@ -96,6 +96,24 @@ st.markdown(
         transform: scale(1.02);
         box-shadow: 0 6px 25px rgba(16, 185, 129, 0.8) !important;
     }}
+
+    /* HAZIR MISIN ONAY KUTUSU KART TASARIMI */
+    .ready-box {{
+        background: rgba(239, 68, 68, 0.15);
+        border: 2px solid #ef4444;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 25px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }}
+    .ready-title {{
+        color: #ff4d4d;
+        font-size: 22px;
+        font-weight: 900;
+        margin-bottom: 15px;
+        text-shadow: 0px 2px 10px rgba(239, 68, 68, 0.5);
+    }}
 </style>
 """,
     unsafe_allow_html=True,
@@ -172,7 +190,7 @@ def olasilik_hesapla(ogrenci_sira, bolum_sira):
     if fark <= -10000:
         return "GELİR BU", "badge-guvenli"
     elif -10000 < fark <= 5000:
-        return "KISMET KANKA", "badge-dengeli"
+        return "KISMET", "badge-dengeli"
     else:
         return "NAH GİDERSİN", "badge-riskli"
 
@@ -183,13 +201,16 @@ if "tercihler" not in st.session_state:
 if "arama_yapildi" not in st.session_state:
     st.session_state.arama_yapildi = False
 
+if "onaylandi" not in st.session_state:
+    st.session_state.onaylandi = False
+
 # --- BAŞLIKLAR ---
 st.markdown(
     '<div class="asensio-title">Marco Asensio (enbüyük fener)</div>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="asensio-subtitle">💛💙 Kanka Tercih Robotu (Ağlama Masası)</div>',
+    '<div class="asensio-subtitle">💛💙 Tercih Robotu (Ağlama Masası)</div>',
     unsafe_allow_html=True,
 )
 
@@ -278,9 +299,11 @@ with st.container():
 
     with f4:
         st.caption("PARA VERCEK MİSİN (BURS DURUMU)")
-        burs_secimi = st.selectbox(
+        burs_secenekleri = ["Burslu", "%50 İndirimli", "%25 İndirimli", "Ücretli"]
+        secilen_burslar = st.multiselect(
             "Burs Durumu",
-            ["TÜMÜ", "Burslu", "%50 İndirimli", "%25 İndirimli", "Ücretli"],
+            burs_secenekleri,
+            placeholder="Burs / İndirim seç...",
             label_visibility="collapsed",
         )
 
@@ -289,6 +312,7 @@ with st.container():
     with btn_col2:
         if st.button("🚀 BUL LAN", key="btn_search_main", use_container_width=True):
             st.session_state.arama_yapildi = True
+            st.session_state.onaylandi = False  # Her yeni aramada onayı sıfırla
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -302,8 +326,26 @@ tab1, tab2 = st.tabs(
 
 with tab1:
     if not st.session_state.arama_yapildi:
-        st.info("👈 Filtreleri ayarla, sonra yeşil **BUL LAN** butonuna bas kanka!")
+        st.info("👈 Filtreleri ayarla, sonra yeşil BUL LAN butonuna bas!")
+    elif st.session_state.arama_yapildi and not st.session_state.onaylandi:
+        # ARAMA YAPILDI AMA SORGULAMA PANERİ ÇIKACAK
+        st.markdown(
+            """
+            <div class="ready-box">
+                <div class="ready-title">⚠️ OLM HAZIRMISIN BAK KENDİNİ MAL HİSSETME SONRA ⚠️</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        c_o1, c_o2, c_o3 = st.columns([4, 4, 4])
+        with c_o2:
+            if st.button("🔥 GÖSTER ULAN!", key="btn_confirm", use_container_width=True):
+                st.session_state.onaylandi = True
+                st.rerun()
+
     else:
+        # ONAY VERİLDİKTEN SONRA LİSTE GELİYOR
         temp_df = df.copy()
 
         # Puan Türü Filtresi
@@ -321,7 +363,7 @@ with tab1:
                 )
             ]
 
-        # Üniversite Filtresi (Açılır Liste Çoklu Seçim)
+        # Üniversite Filtresi
         if secilen_unis and "Üniversite" in temp_df.columns:
             secilen_unis_tr = [tr_lower(u) for u in secilen_unis]
             temp_df = temp_df[
@@ -330,7 +372,7 @@ with tab1:
                 )
             ]
 
-        # Bölüm Filtresi (Açılır Liste Çoklu Seçim)
+        # Bölüm Filtresi
         if secilen_bolumler and "Bölüm" in temp_df.columns:
             secilen_bolumler_tr = [tr_lower(b) for b in secilen_bolumler]
             temp_df = temp_df[
@@ -340,15 +382,17 @@ with tab1:
             ]
 
         # Burs / İndirim Filtresi
-        if burs_secimi != "TÜMÜ" and "Bölüm" in temp_df.columns:
-            burs_query = tr_lower(burs_secimi)
+        if secilen_burslar and "Bölüm" in temp_df.columns:
+            secilen_burslar_tr = [tr_lower(b) for b in secilen_burslar]
             temp_df = temp_df[
-                temp_df["Bölüm"].apply(lambda x: burs_query in tr_lower(str(x)))
+                temp_df["Bölüm"].apply(
+                    lambda x: any(b in tr_lower(str(x)) for b in secilen_burslar_tr)
+                )
             ]
 
         if temp_df.empty:
             st.warning(
-                "⚠️ Kanka aradığın kriterlerde sonuç çıkmadı! Seçimleri biraz gevşetip tekrar 'BUL LAN'a bas."
+                "⚠️ Aradığın kriterlerde sonuç çıkmadı! Seçimleri biraz gevşetip tekrar 'BUL LAN'a bas."
             )
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
@@ -433,7 +477,7 @@ with tab2:
     st.subheader("📌 Son Çare Tercih Listen")
 
     if not st.session_state.tercihler:
-        st.warning("Boş boş bakma kanka, bir iki bölüm ekle önce.")
+        st.warning("Boş boş bakma, bir iki bölüm ekle önce.")
     else:
         tercih_df = pd.DataFrame(st.session_state.tercihler)
         st.dataframe(tercih_df, use_container_width=True)
