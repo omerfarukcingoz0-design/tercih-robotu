@@ -133,8 +133,6 @@ def norm(text):
 @st.cache_data
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
-
-    # Sütun isimlerini stringe çevirip temizleyelim
     df.columns = [str(col).strip() for col in df.columns]
 
     rename_mapping = {}
@@ -142,26 +140,24 @@ def veri_yukle():
     for col in df.columns:
         c_low = norm(col)
 
+        # "kod", "id", "kodu" içeren sütunları kesinlikle harici tutalım
+        if "kod" in c_low or "id" in c_low or "no" in c_low:
+            continue
+
         # Üniversite
         if any(
-            k in c_low
-            for k in ["universite", "uni_adi", "universite_adi", "univer"]
+            k in c_low for k in ["universite", "uni_adi", "univer"]
         ) and "Üniversite" not in rename_mapping.values():
             rename_mapping[col] = "Üniversite"
 
-        # Bölüm / Program
+        # Bölüm (Program kodu yerine isim olan sütunu yakalayalım)
         elif any(
-            k in c_low
-            for k in [
-                "bolum",
-                "program",
-                "prog",
-                "program_adi",
-                "bolum_adi",
-                "dal",
-            ]
+            k in c_low for k in ["bolum", "program_adi", "bolum_adi", "program"]
         ) and "Bölüm" not in rename_mapping.values():
-            rename_mapping[col] = "Bölüm"
+            # Sütunun ilk değerine bakarak sayısal (kod) olmadığını doğrulayalım
+            sample_val = str(df[col].dropna().iloc[0]) if not df[col].dropna().empty else ""
+            if not sample_val.replace(".", "").isdigit():
+                rename_mapping[col] = "Bölüm"
 
         # Sıralama
         elif any(
@@ -191,35 +187,27 @@ def veri_yukle():
             rename_mapping[col] = "Şehir"
 
         # Fakülte
-        elif (
-            "fakulte" in c_low
-            or "fakulte_adi" in c_low
-            and "Fakülte" not in rename_mapping.values()
-        ):
+        elif "fakulte" in c_low and "Fakülte" not in rename_mapping.values():
             rename_mapping[col] = "Fakülte"
 
     df = df.rename(columns=rename_mapping)
 
-    # Eğer "Bölüm" adında bir sütun eşleşmediyse, CSV'deki ilk metin ağırlıklı sütunlardan birini otomatik atayalım
+    # Eğer "Bölüm" hala bulunamadıysa, sayısal olmayan ilk metin sütununu Bölüm yapalım
     if "Bölüm" not in df.columns:
-        possible_cols = [
-            c
-            for c in df.columns
-            if c
-            not in ["Üniversite", "Sıralama", "Puan_Türü", "Şehir", "Fakülte"]
-        ]
-        if possible_cols:
-            df["Bölüm"] = df[possible_cols[0]]
-        else:
-            df["Bölüm"] = "Belirtilmedi"
+        for col in df.columns:
+            if col not in ["Üniversite", "Sıralama", "Puan_Türü", "Şehir", "Fakülte"]:
+                sample_val = str(df[col].dropna().iloc[0]) if not df[col].dropna().empty else ""
+                if not sample_val.replace(".", "").isdigit():
+                    df["Bölüm"] = df[col]
+                    break
 
-    for req in ["Üniversite", "Sıralama", "Puan_Türü", "Şehir", "Fakülte"]:
+    for req in ["Üniversite", "Bölüm", "Sıralama", "Puan_Türü", "Şehir", "Fakülte"]:
         if req not in df.columns:
             df[req] = "Belirtilmedi"
 
     df = df.loc[:, ~df.columns.duplicated()]
 
-    # Şehir Temizliği
+    # Şehir ve Metin Temizliği
     df["Şehir"] = (
         df["Şehir"].astype(str).replace(r"^\d+(\.\d+)?$", "", regex=True)
     )
@@ -357,6 +345,7 @@ with st.container():
                 x
                 for x in set(bolum_listesi)
                 if x not in ["", "nan", "Belirtilmedi", "None"]
+                and not x.replace(".", "").isdigit()
             ]
         )
         secilen_bolumler = st.multiselect(
@@ -464,7 +453,7 @@ with tab1:
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
 
-            # Sonuçları sıralamaya göre sıralayıp ilk 100'ü göster
+            # Sonuçları sıralamay göre sıralayıp ilk 100'ü göster
             temp_df = temp_df.sort_values(by="Sıralama_Sayisal", ascending=True)
             gosterilecek_df = temp_df.head(100)
 
