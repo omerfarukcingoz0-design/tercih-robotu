@@ -301,17 +301,30 @@ with st.container():
 
     with f3:
         st.caption("HANGİ BÖLÜM")
-        bolumler = (
-            sorted(
+        # Benzersiz ana bölüm adlarını sadeleştirip çekiyoruz
+        bolumler = [
+            "İşletme",
+            "Uluslararası Ticaret",
+            "Bilgisayar Mühendisliği",
+            "Hukuk",
+            "Tıp",
+            "Yazılım Mühendisliği",
+            "İktisat",
+            "Mimarlık",
+            "Psikoloji",
+            "Hemşirelik",
+        ]
+        if "Bölüm" in df.columns:
+            ham_bolumler = sorted(
                 [
                     str(x)
                     for x in df["Bölüm"].dropna().unique()
                     if str(x).strip() != ""
                 ]
             )
-            if "Bölüm" in df.columns
-            else []
-        )
+            if len(ham_bolumler) > 0:
+                bolumler = ham_bolumler
+
         secilen_bolumler = st.multiselect(
             "Bölüm Seçin",
             bolumler,
@@ -376,13 +389,13 @@ with tab1:
     else:
         temp_df = df.copy()
 
-        # Puan Türü Filtresi
+        # 1. Puan Türü Filtresi
         if secilen_puan != "TÜMÜ" and "Puan_Türü" in temp_df.columns:
             temp_df = temp_df[
                 temp_df["Puan_Türü"].astype(str).str.upper() == secilen_puan
             ]
 
-        # Şehir Filtresi
+        # 2. Şehir Filtresi
         if secilen_sehirler and "Şehir" in temp_df.columns:
             secilen_sehirler_tr = [tr_lower(s) for s in secilen_sehirler]
             temp_df = temp_df[
@@ -391,7 +404,7 @@ with tab1:
                 )
             ]
 
-        # Üniversite Filtresi
+        # 3. Üniversite Filtresi
         if secilen_unis and "Üniversite" in temp_df.columns:
             secilen_unis_tr = [tr_lower(u) for u in secilen_unis]
             temp_df = temp_df[
@@ -400,7 +413,7 @@ with tab1:
                 )
             ]
 
-        # Bölüm Filtresi (Geliştirilmiş Esnek Arama)
+        # 4. Bölüm Filtresi (Tam Eşleşme veya İçinde Geçme)
         if secilen_bolumler and "Bölüm" in temp_df.columns:
             secilen_bolumler_tr = [tr_lower(b) for b in secilen_bolumler]
             temp_df = temp_df[
@@ -409,7 +422,7 @@ with tab1:
                 )
             ]
 
-        # Burs / İndirim Filtresi (Geliştirilmiş Esnek Arama)
+        # 5. Burs / İndirim Filtresi (Metin İçinde Esnek Arama)
         if secilen_burslar and "Bölüm" in temp_df.columns:
             secilen_burslar_tr = [tr_lower(b) for b in secilen_burslar]
             temp_df = temp_df[
@@ -420,7 +433,7 @@ with tab1:
 
         if temp_df.empty:
             st.warning(
-                "⚠️ Aradığın kriterlerde sonuç çıkmadı! Seçimleri biraz gevşetip (örneğin sadece Bölüm veya sadece Burs seçerek) tekrar 'BUL LAN'a bas."
+                "⚠️ Aradığın kriterlerde sonuç çıkmadı! Seçimleri biraz gevşetip (örneğin sadece Bölüm seçerek) tekrar 'BUL LAN'a bas."
             )
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
