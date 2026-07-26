@@ -134,7 +134,7 @@ def norm(text):
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
 
-    # 1. Çiftlenen sütun isimlerini temizle / tekleştir
+    # 1. Sütun isimlerini tekleştir ve boşlukları temizle
     cols = pd.Series(df.columns.astype(str).str.strip())
     for dup in cols[cols.duplicated()].unique():
         cols[cols[cols == dup].index.values.tolist()] = [
@@ -142,28 +142,37 @@ def veri_yukle():
         ]
     df.columns = cols
 
-    # 2. Akıllı sütun eşleme
+    # 2. Akıllı Sütun Eşleme (Genişletilmiş Esnek Arama)
     rename_mapping = {}
     for col in df.columns:
         c_low = norm(col)
+
         if (
             "universite" in c_low or "uni" in c_low
         ) and "Üniversite" not in rename_mapping.values():
             rename_mapping[col] = "Üniversite"
         elif (
-            "bolum" in c_low or "program" in c_low
+            "bolum" in c_low
+            or "program" in c_low
+            or "prog" in c_low
+            or "dal" in c_low
         ) and "Bölüm" not in rename_mapping.values():
             rename_mapping[col] = "Bölüm"
         elif (
-            "sira" in c_low or "2023" in c_low or "2024" in c_low
+            "sira" in c_low
+            or "2023" in c_low
+            or "2024" in c_low
+            or "025" in c_low
         ) and "Sıralama" not in rename_mapping.values():
             rename_mapping[col] = "Sıralama"
         elif (
-            "puan" in c_low or "tur" in c_low
+            "puan" in c_low or "tur" in c_low or "alani" in c_low
         ) and "Puan_Türü" not in rename_mapping.values():
             rename_mapping[col] = "Puan_Türü"
         elif (
-            c_low in ["sehir", "il", "il adi", "sehir adi"]
+            c_low in ["sehir", "il", "il adi", "sehir adi", "şehir"]
+            or "sehir" in c_low
+            or "il" in c_low
         ) and "Şehir" not in rename_mapping.values():
             rename_mapping[col] = "Şehir"
         elif "fakulte" in c_low and "Fakülte" not in rename_mapping.values():
@@ -171,13 +180,14 @@ def veri_yukle():
 
     df = df.rename(columns=rename_mapping)
 
-    # 3. Eksik sütunları tamamla
+    # 3. Eksik Sütun Kontrolü
     for req in ["Üniversite", "Bölüm", "Sıralama", "Puan_Türü", "Şehir", "Fakülte"]:
         if req not in df.columns:
             df[req] = "Belirtilmedi"
 
     df = df.loc[:, ~df.columns.duplicated()]
 
+    # Şehir ve Metin Temizlikleri
     df["Şehir"] = (
         df["Şehir"].astype(str).replace(r"^\d+(\.\d+)?$", "", regex=True)
     )
@@ -268,12 +278,17 @@ with st.container():
     with f1:
         st.caption("HANGİ ŞEHİR")
         sehirler = sorted(
-            [
-                str(x).strip()
-                for x in df["Şehir"].dropna().unique()
-                if str(x).strip() not in ["", "nan", "Belirtilmedi"]
-                and not str(x).replace(".", "").isdigit()
-            ]
+            list(
+                set(
+                    [
+                        str(x).strip()
+                        for x in df["Şehir"].dropna().unique()
+                        if str(x).strip()
+                        not in ["", "nan", "Belirtilmedi", "None"]
+                        and not str(x).replace(".", "").isdigit()
+                    ]
+                )
+            )
         )
         secilen_sehirler = st.multiselect(
             "Şehir Seçin",
@@ -284,14 +299,18 @@ with st.container():
 
     with f2:
         st.caption("HANGİ ÜNİVERSİTE")
-        uni_series = df["Üniversite"]
         universiteler = sorted(
-            [
-                str(x).strip()
-                for x in uni_series.dropna().unique()
-                if str(x).strip() not in ["", "nan", "Belirtilmedi"]
-                and not str(x).replace(".", "").isdigit()
-            ]
+            list(
+                set(
+                    [
+                        str(x).strip()
+                        for x in df["Üniversite"].dropna().unique()
+                        if str(x).strip()
+                        not in ["", "nan", "Belirtilmedi", "None"]
+                        and not str(x).replace(".", "").isdigit()
+                    ]
+                )
+            )
         )
         secilen_unis = st.multiselect(
             "Üniversite Seçin",
@@ -302,14 +321,17 @@ with st.container():
 
     with f3:
         st.caption("HANGİ BÖLÜM")
-        bolum_series = df["Bölüm"]
         bolumler = sorted(
-            [
-                str(x).strip()
-                for x in bolum_series.dropna().unique()
-                if str(x).strip() not in ["", "nan", "Belirtilmedi"]
-                and not str(x).replace(".", "").isdigit()
-            ]
+            list(
+                set(
+                    [
+                        str(x).strip()
+                        for x in df["Bölüm"].dropna().unique()
+                        if str(x).strip()
+                        not in ["", "nan", "Belirtilmedi", "None"]
+                    ]
+                )
+            )
         )
         secilen_bolumler = st.multiselect(
             "Bölüm Seçin",
