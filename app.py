@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# Derece Kampüsü Tarzı Modern Beyaz CSS Tasarımı
+# Derece Kampüsü Tarzı Modern CSS Tasarımı
 st.markdown(
     """
 <style>
@@ -25,9 +25,9 @@ st.markdown(
         margin-bottom: 20px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
-    .badge-guvenli { background-color: #dcfce7; color: #15803d; font-weight: bold; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
-    .badge-dengeli { background-color: #fef3c7; color: #b45309; font-weight: bold; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
-    .badge-riskli { background-color: #fee2e2; color: #b91c1c; font-weight: bold; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+    .badge-guvenli { background-color: #dcfce7; color: #15803d; font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 13px; }
+    .badge-dengeli { background-color: #fef3c7; color: #b45309; font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 13px; }
+    .badge-riskli { background-color: #fee2e2; color: #b91c1c; font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 13px; }
     .stat-box {
         background-color: #f1f5f9;
         border-radius: 12px;
@@ -48,7 +48,6 @@ st.markdown(
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
 
-    # Sütun isimlerini küçültüp temizleme
     df.columns = [str(col).strip().lower() for col in df.columns]
 
     def sutun_bul(anahtar_kelimeler):
@@ -63,7 +62,6 @@ def veri_yukle():
     puan_col = sutun_bul(["tur", "tür", "puan"])
     sehir_col = sutun_bul(["il", "sehir", "şehir"])
     fakulte_col = sutun_bul(["fakulte", "fakülte"])
-    burs_col = sutun_bul(["burs", "ucret", "ücret"])
 
     renames = {}
     if uni_col:
@@ -78,8 +76,6 @@ def veri_yukle():
         renames[sehir_col] = "Şehir"
     if fakulte_col:
         renames[fakulte_col] = "Fakülte"
-    if burs_col:
-        renames[burs_col] = "Burs"
 
     return df.rename(columns=renames)
 
@@ -96,18 +92,18 @@ def olasilik_hesapla(ogrenci_sira, bolum_sira):
     try:
         bolum_sira = float(bolum_sira)
         if pd.isna(bolum_sira) or bolum_sira <= 0:
-            return "VERİ YOK", "badge-riskli"
+            return "🔴 RİSKLİ", "badge-riskli"
     except:
-        return "VERİ YOK", "badge-riskli"
+        return "🔴 RİSKLİ", "badge-riskli"
 
     fark = ogrenci_sira - bolum_sira
 
     if fark <= -10000:
-        return "GÜVENLİ", "badge-guvenli"
+        return "🟢 GÜVENLİ", "badge-guvenli"
     elif -10000 < fark <= 5000:
-        return "DENGELİ", "badge-dengeli"
+        return "🟡 DENGELİ", "badge-dengeli"
     else:
-        return "RİSKLİ", "badge-riskli"
+        return "🔴 RİSKLİ", "badge-riskli"
 
 
 # Session State (Tercih Listesi Hafızası)
@@ -121,8 +117,12 @@ ogrenci_sira = st.sidebar.number_input(
     "YKS Sıralamanız:", min_value=1, value=50000, step=1000
 )
 
-arama_metni = st.sidebar.text_input(
-    "🔍 Bölüm veya Üniversite Adı:", placeholder="Örn: İşletme, Koç..."
+# Ayrı Ayrı Üniversite ve Bölüm Araması
+arama_uni = st.sidebar.text_input(
+    "🏫 Üniversite Adı:", placeholder="Örn: Koç, İTÜ, Boğaziçi..."
+)
+arama_bolum = st.sidebar.text_input(
+    "🎓 Bölüm Adı:", placeholder="Örn: İşletme, Bilgisayar..."
 )
 
 # Şehir Seçimi
@@ -150,19 +150,24 @@ puan_turleri = (
 )
 secilen_puan = st.sidebar.selectbox("Puan Türü:", puan_turleri)
 
-# İhtimal Filtresi
+# İhtimal Filtresi (Renklendirildi)
 durum_filtresi = st.sidebar.multiselect(
     "Durum:",
-    ["GÜVENLİ", "DENGELİ", "RİSKLİ"],
-    default=["GÜVENLİ", "DENGELİ", "RİSKLİ"],
+    ["🟢 GÜVENLİ", "🟡 DENGELİ", "🔴 RİSKLİ"],
+    default=["🟢 GÜVENLİ", "🟡 DENGELİ", "🔴 RİSKLİ"],
 )
 
 
 # --- FİLTRELEME MANTIĞI ---
-# Başlangıçta boş gelmesi için filtre kriteri aranıyor
 filtreli_df = pd.DataFrame()
 
-if arama_metni or secilen_sehirler or (secilen_puan != "Tümü"):
+# En az bir filtre girildiyse aramayı başlat
+if (
+    arama_uni
+    or arama_bolum
+    or secilen_sehirler
+    or (secilen_puan != "Tümü")
+):
     temp_df = df.copy()
 
     if secilen_puan != "Tümü" and "Puan_Türü" in temp_df.columns:
@@ -171,22 +176,19 @@ if arama_metni or secilen_sehirler or (secilen_puan != "Tümü"):
     if secilen_sehirler and "Şehir" in temp_df.columns:
         temp_df = temp_df[temp_df["Şehir"].astype(str).isin(secilen_sehirler)]
 
-    if arama_metni:
-        u_mask = (
+    if arama_uni and "Üniversite" in temp_df.columns:
+        temp_df = temp_df[
             temp_df["Üniversite"]
             .astype(str)
-            .str.contains(arama_metni, case=False, na=False)
-            if "Üniversite" in temp_df.columns
-            else False
-        )
-        b_mask = (
+            .str.contains(arama_uni, case=False, na=False)
+        ]
+
+    if arama_bolum and "Bölüm" in temp_df.columns:
+        temp_df = temp_df[
             temp_df["Bölüm"]
             .astype(str)
-            .str.contains(arama_metni, case=False, na=False)
-            if "Bölüm" in temp_df.columns
-            else False
-        )
-        temp_df = temp_df[u_mask | b_mask]
+            .str.contains(arama_bolum, case=False, na=False)
+        ]
 
     filtreli_df = temp_df
 
@@ -198,13 +200,14 @@ tab1, tab2 = st.tabs(["🔍 Bölüm Arama", "📋 Tercih Listem"])
 
 with tab1:
     if (
-        not arama_metni
+        not arama_uni
+        and not arama_bolum
         and not secilen_sehirler
         and secilen_puan == "Tümü"
         and filtreli_df.empty
     ):
         st.info(
-            "👈 Lütfen sol taraftaki filtre alanından **Bölüm Adı (Örn: İşletme)** veya **Şehir** girerek aramayı başlatın."
+            "👈 Lütfen sol taraftaki filtre alanından **Üniversite Adı**, **Bölüm Adı** veya **Şehir** girerek aramayı başlatın."
         )
     else:
         st.write(
@@ -227,7 +230,7 @@ with tab1:
             sehir = row.get("Şehir", "")
             puan_turu = row.get("Puan_Türü", "")
 
-            # Derece Kampüsü Kart Arayüzü
+            # Kart Tasarımı
             with st.container():
                 st.markdown(
                     f"""
@@ -254,7 +257,7 @@ with tab1:
                     unsafe_allow_html=True,
                 )
 
-                # Listeme Ekle / Çıkar Butonu
+                # Listeme Ekle / Çıkar
                 tercih_item = {
                     "Üniversite": uni_adi,
                     "Bölüm": bolum_adi,
@@ -288,7 +291,6 @@ with tab2:
         tercih_df = pd.DataFrame(st.session_state.tercihler)
         st.dataframe(tercih_df, use_container_width=True)
 
-        # Excel / CSV İndirme Butonu
         csv_data = tercih_df.to_csv(index=False).encode("utf-8")
 
         st.download_button(
