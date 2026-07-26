@@ -198,7 +198,7 @@ def veri_yukle():
 
     df = df.loc[:, ~df.columns.duplicated()]
 
-    # Şehir ve Metin Temizliği
+    # Şehir Temizliği
     df["Şehir"] = (
         df["Şehir"].astype(str).replace(r"^\d+(\.\d+)?$", "", regex=True)
     )
@@ -406,11 +406,11 @@ with tab1:
                 )
             ]
 
-        # 4. Bölüm Filtresi (Birebir Eşleşme Esnekliği)
+        # 4. Bölüm Filtresi
         if secilen_bolumler:
             temp_df = temp_df[temp_df["Bölüm"].isin(secilen_bolumler)]
 
-        # 5. Burs Filtresi (Bölüm seçilmediyse uygula, çakışmayı önle)
+        # 5. Burs Filtresi
         if secilen_burslar and not secilen_bolumler:
             burs_keywords = []
             for b in secilen_burslar:
@@ -452,38 +452,34 @@ with tab1:
                 sehir = row.get("Şehir", "")
                 puan_turu = row.get("Puan_Türü", "")
 
-                st.markdown(
-                    f"""
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            <h3 style="margin: 0 0 6px 0; font-size: 22px; color: #ffed00;">{bolum_adi}</h3>
-                            <p style="margin: 0; color: #ffffff; font-weight: 700; font-size: 15px;">{uni_adi} · {sehir}</p>
-                            <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px;">{fakulte}</p>
-                        </div>
-                        <div>
-                            <span class="{badge_class}">{durum}</span>
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
-                        <div class="stat-box">
-                            <div class="stat-title">KAÇLA KAPATMIŞ</div>
-                            <div class="stat-value" style="color: #ffed00;">{bolum_sira_str}</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-title">ALAN</div>
-                            <div class="stat-value">{puan_turu}</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-title">MEMLEKET</div>
-                            <div class="stat-value">{sehir}</div>
-                        </div>
-                    </div>
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
+                card_html = f"""<div class="card">
+<div style="display: flex; justify-content: space-between; align-items: flex-start;">
+<div>
+<h3 style="margin: 0 0 6px 0; font-size: 22px; color: #ffed00;">{bolum_adi}</h3>
+<p style="margin: 0; color: #ffffff; font-weight: 700; font-size: 15px;">{uni_adi} · {sehir}</p>
+<p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px;">{fakulte}</p>
+</div>
+<div>
+<span class="{badge_class}">{durum}</span>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
+<div class="stat-box">
+<div class="stat-title">KAÇLA KAPATMIŞ</div>
+<div class="stat-value" style="color: #ffed00;">{bolum_sira_str}</div>
+</div>
+<div class="stat-box">
+<div class="stat-title">ALAN</div>
+<div class="stat-value">{puan_turu}</div>
+</div>
+<div class="stat-box">
+<div class="stat-title">MEMLEKET</div>
+<div class="stat-value">{sehir}</div>
+</div>
+</div>
+</div>"""
+
+                st.markdown(card_html, unsafe_allow_html=True)
 
                 tercih_item = {
                     "Üniversite": uni_adi,
