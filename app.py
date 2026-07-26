@@ -8,19 +8,12 @@ st.set_page_config(
     layout="wide",
 )
 
-# Koyu Tema ve Modern Arayüz CSS
+# Koyu Tema ve Arayüz Tasarımı
 st.markdown(
     """
 <style>
     .stApp {
         background-color: #0e1117;
-    }
-    .metric-box {
-        background-color: #1e222d;
-        padding: 12px 20px;
-        border-radius: 10px;
-        border: 1px solid #2e3440;
-        text-align: center;
     }
 </style>
 """,
@@ -28,27 +21,42 @@ st.markdown(
 )
 
 
-# Veri Yükleme ve Sütun İsimlerini Otomatik Esnek Eşleme
+# Veri Yükleme ve Sütun İsimlerini Temizleme
 @st.cache_data
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
 
-    # Kolon İsimlerini Akıllıca Algıla
+    # Sütun isimlerini küçük harfe çevirip boşlukları temizleyelim
+    df.columns = [str(col).strip().lower() for col in df.columns]
+
+    # Esnek Sütun Yakalama
+    def sutun_bul(anahtar_kelimeler):
+        for col in df.columns:
+            if any(k in col for k in anahtar_kelimeler):
+                return col
+        return None
+
+    uni_col = sutun_bul(["uni", "üniversite", "universite"])
+    bolum_col = sutun_bul(["isim", "program", "bölüm", "bolum"])
+    sira_col = sutun_bul(["sira", "sıra"])
+    puan_col = sutun_bul(["tur", "tür", "puan"])
+    sehir_col = sutun_bul(["il", "sehir", "şehir"])
+    fakulte_col = sutun_bul(["fakulte", "fakülte"])
+
+    # Standart isimlere dönüştür
     renames = {}
-    for col in df.columns:
-        c = str(col).lower().strip()
-        if any(x in c for x in ["uni", "üniversite", "universite"]):
-            renames[col] = "Üniversite"
-        elif any(x in c for x in ["isim", "program", "bölüm", "bolum"]):
-            renames[col] = "Bölüm"
-        elif any(x in c for x in ["sira", "sıra"]):
-            renames[col] = "Sıralama"
-        elif any(x in c for x in ["tur", "tür", "puan"]):
-            renames[col] = "Puan_Türü"
-        elif any(x in c for x in ["il", "sehir", "şehir"]):
-            renames[col] = "Şehir"
-        elif any(x in c for x in ["fakulte", "fakülte"]):
-            renames[col] = "Fakülte"
+    if uni_col:
+        renames[uni_col] = "Üniversite"
+    if bolum_col:
+        renames[bolum_col] = "Bölüm"
+    if sira_col:
+        renames[sira_col] = "Sıralama"
+    if puan_col:
+        renames[puan_col] = "Puan_Türü"
+    if sehir_col:
+        renames[sehir_col] = "Şehir"
+    if fakulte_col:
+        renames[fakulte_col] = "Fakülte"
 
     df = df.rename(columns=renames)
     return df
@@ -84,10 +92,6 @@ def olasilik_hesapla(ogrenci_sira, bolum_sira):
         return "🔴 Düşük / Sürpriz"
 
 
-# Tercih Listesi Oturum Hafızası
-if "tercih_listesi" not in st.session_state:
-    st.session_state.tercih_listesi = []
-
 # --- SOL PANEL (FİLTRELER) ---
 st.sidebar.title("🎯 Tercih Filtreleri")
 
@@ -95,21 +99,23 @@ ogrenci_sira = st.sidebar.number_input(
     "YKS Sıralamanız:", min_value=1, value=50000, step=1000
 )
 
-# Puan Türü Filtresi (Güvenli Kontrol)
-puan_turleri = ["Tümü"]
+# Puan Türü Filtresi (Güvenli Yöntem)
 if "Puan_Türü" in df.columns:
-    puan_turleri += [
+    puan_listesi = ["Tümü"] + [
         str(x) for x in df["Puan_Türü"].dropna().unique() if str(x).strip() != ""
     ]
-secilen_puan = st.sidebar.selectbox("Puan Türü:", puan_turleri)
+else:
+    puan_listesi = ["Tümü"]
+secilen_puan = st.sidebar.selectbox("Puan Türü:", puan_listesi)
 
-# Şehir Filtresi (Güvenli Kontrol)
-sehirler = []
+# Şehir Filtresi (Güvenli Yöntem)
 if "Şehir" in df.columns:
-    sehirler = [
+    sehir_listesi = [
         str(x) for x in df["Şehir"].dropna().unique() if str(x).strip() != ""
     ]
-secilen_sehirler = st.sidebar.multiselect("Şehir Seçimi:", sehirler)
+else:
+    sehir_listesi = []
+secilen_sehirler = st.sidebar.multiselect("Şehir Seçimi:", sehir_listesi)
 
 # İhtimal Filtresi
 ihtimal_filtresi = st.sidebar.multiselect(
@@ -164,7 +170,7 @@ if arama_metni:
     )
     filtreli_df = filtreli_df[uni_mask | bolum_mask]
 
-# Olasılık Hesapla
+# Olasılık Hesaplama
 sira_col = "Sıralama" if "Sıralama" in filtreli_df.columns else df.columns[-1]
 
 olasiliklar = []
@@ -174,38 +180,38 @@ for _, row in filtreli_df.iterrows():
 
 filtreli_df.insert(0, "Gelme İhtimali", olasiliklar)
 
-# İhtimal Filtresi Uygula
-filtreli_df = filtreli_df[filtreli_df["Gelme İhtimali"].isin(ihtimal_filtresi)]
+# İhtimal Filtresi Uygulama
+if ihtimal_filtresi:
+    filtreli_df = filtreli_df[
+        filtreli_df["Gelme İhtimali"].isin(ihtimal_filtresi)
+    ]
 
 # --- ANA EKRAN ---
 st.title("🎓 YKS Tercih & Analiz Robotu")
 
-# Üst Gösterge Kutuları
+# Üst Göstergeler
 c1, c2 = st.columns(2)
 with c1:
-    st.metric("Sıralamanız", f"{ogrenci_sira:,}")
+    st.metric("Girilen Sıralama", f"{ogrenci_sira:,}")
 with c2:
     st.metric("Bulunan Program Sayısı", f"{len(filtreli_df):,}")
 
-# Tablo Listeleme
+# Tablo Gösterimi
 st.subheader("Üniversite ve Bölüm Sonuçları")
 
-# Gösterilecek Temiz Kolonlar
-kolonlar = [
-    col
-    for col in [
-        "Gelme İhtimali",
-        "Üniversite",
-        "Fakülte",
-        "Bölüm",
-        "Puan_Türü",
-        "Şehir",
-        "Sıralama",
-    ]
-    if col in filtreli_df.columns
+# Gösterilecek Temiz Kolon Sırası
+oncelikli_kolonlar = [
+    "Gelme İhtimali",
+    "Üniversite",
+    "Fakülte",
+    "Bölüm",
+    "Puan_Türü",
+    "Şehir",
+    "Sıralama",
 ]
+gosterilecek = [col for col in oncelikli_kolonlar if col in filtreli_df.columns]
 
-if len(kolonlar) < 2:
-    kolonlar = filtreli_df.columns  # Ne olursa olsun göster
+if not gosterilecek:
+    gosterilecek = filtreli_df.columns
 
-st.dataframe(filtreli_df[kolonlar], use_container_width=True, hide_index=True)
+st.dataframe(filtreli_df[gosterilecek], use_container_width=True, hide_index=True)
