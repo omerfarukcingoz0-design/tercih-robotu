@@ -118,14 +118,16 @@ st.markdown(
         text-shadow: 0px 2px 10px rgba(239, 68, 68, 0.5);
     }}
 
-    /* KÜÇÜK GÖRSEL STİLİ */
-    .small-avatar {{
-        width: 85px;
-        height: 85px;
-        border-radius: 16px;
-        object-fit: cover;
-        border: 2px solid #ffed00;
-        box-shadow: 0 4px 15px rgba(255, 237, 0, 0.3);
+    /* SARI NENON ÇERÇEVELİ BÜYÜK SKORBOARD RESMİ */
+    .scoreboard-img {{
+        width: 100%;
+        max-width: 280px;
+        height: auto;
+        border-radius: 20px;
+        border: 3px solid #ffed00;
+        box-shadow: 0 0 20px rgba(255, 237, 0, 0.6), inset 0 0 10px rgba(255, 237, 0, 0.4);
+        display: block;
+        margin-left: auto;
     }}
 </style>
 """,
@@ -217,8 +219,8 @@ if "arama_yapildi" not in st.session_state:
 if "onaylandi" not in st.session_state:
     st.session_state.onaylandi = False
 
-# --- BAŞLIKLAR & KÜÇÜK RESİM ---
-head_col1, head_col2 = st.columns([8.5, 1.5])
+# --- BAŞLIKLAR & BÜYÜK SAĞ RESİM ---
+head_col1, head_col2 = st.columns([7, 3])
 with head_col1:
     st.markdown(
         '<div class="asensio-title">Marco Asensio (enbüyük fener)</div>',
@@ -230,7 +232,7 @@ with head_col1:
     )
 with head_col2:
     st.markdown(
-        f'<img src="{small_logo_url}" class="small-avatar">',
+        f'<img src="{small_logo_url}" class="scoreboard-img">',
         unsafe_allow_html=True,
     )
 
