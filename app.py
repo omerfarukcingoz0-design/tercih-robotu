@@ -77,21 +77,24 @@ st.markdown(
     .stat-title {{ font-size: 11px; color: #ffed00; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }}
     .stat-value {{ font-size: 20px; color: #ffffff; font-weight: 800; margin-top: 2px; }}
 
-    /* YEŞİL BUL LAN BUTONU TASARIMI */
-    div.stButton > button[key="btn_search_main"] {{
+    /* FISTIK YEŞİLİ BUL LAN BUTONU TASARIMI */
+    div.stButton > button {{
         background-color: #10b981 !important;
-        color: #ffffff !important;
+        color: #022c22 !important;
         font-weight: 900 !important;
-        font-size: 18px !important;
+        font-size: 20px !important;
         border-radius: 12px !important;
-        border: 2px solid #059669 !important;
-        padding: 10px 24px !important;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+        border: 2px solid #34d399 !important;
+        padding: 12px 28px !important;
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.6) !important;
         transition: all 0.3s ease !important;
+        width: 100% !important;
     }}
-    div.stButton > button[key="btn_search_main"]:hover {{
+    div.stButton > button:hover {{
         background-color: #059669 !important;
+        color: #ffffff !important;
         transform: scale(1.02);
+        box-shadow: 0 6px 25px rgba(16, 185, 129, 0.8) !important;
     }}
 </style>
 """,
@@ -212,9 +215,9 @@ with st.container():
 
     st.write("---")
 
-    f1, f2, f3 = st.columns(3)
+    f1, f2, f3, f4 = st.columns(4)
     with f1:
-        st.caption("HANGİ ŞEHİR (SANKİ İSTANBUL DIŞI GİDECEN)")
+        st.caption("HANGİ ŞEHİR")
         sehirler = (
             sorted(
                 [
@@ -234,7 +237,7 @@ with st.container():
         )
 
     with f2:
-        st.caption("HANGİ ÜNİVERSİTE (SANKİ SENİ ALICAKLAR)")
+        st.caption("HANGİ ÜNİVERSİTE")
         arama_uni = st.text_input(
             "Üniversite",
             placeholder="Örn: Beykent, ODTÜ...",
@@ -242,15 +245,23 @@ with st.container():
         )
 
     with f3:
-        st.caption("HANGİ BÖLÜM LAN OKUYACAN SANKİ")
+        st.caption("HANGİ BÖLÜM")
         arama_bolum = st.text_input(
             "Bölüm",
             placeholder="Örn: İşletme, Bilgisayar...",
             label_visibility="collapsed",
         )
 
+    with f4:
+        st.caption("PARA VERCEK MİSİN (BURS DURUMU)")
+        burs_secimi = st.selectbox(
+            "Burs Durumu",
+            ["TÜMÜ", "Burslu", "%50 İndirimli", "%25 İndirimli", "Ücretli"],
+            label_visibility="collapsed",
+        )
+
     st.write("")
-    btn_col1, btn_col2, btn_col3 = st.columns([4, 4, 4])
+    btn_col1, btn_col2, btn_col3 = st.columns([3, 6, 3])
     with btn_col2:
         if st.button("🚀 BUL LAN", key="btn_search_main", use_container_width=True):
             st.session_state.arama_yapildi = True
@@ -300,9 +311,16 @@ with tab1:
                 temp_df["Bölüm"].apply(lambda x: bolum_query in tr_lower(str(x)))
             ]
 
+        # Burs / İndirim Filtresi
+        if burs_secimi != "TÜMÜ" and "Bölüm" in temp_df.columns:
+            burs_query = tr_lower(burs_secimi)
+            temp_df = temp_df[
+                temp_df["Bölüm"].apply(lambda x: burs_query in tr_lower(str(x)))
+            ]
+
         if temp_df.empty:
             st.warning(
-                "⚠️ Kanka aradığın kriterlerde sonuç çıkmadı! Şehir veya Üniversite kutularını boş bırakıp sadece Bölüm yazarak 'BUL LAN'a tekrar basmayı dene."
+                "⚠️ Kanka aradığın kriterlerde sonuç çıkmadı! Filtreleri veya Burs seçimini (TÜMÜ yaparak) tekrar kontrol et."
             )
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
