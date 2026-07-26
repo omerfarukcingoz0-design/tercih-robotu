@@ -110,7 +110,7 @@ st.markdown(
 
 
 def norm(text):
-    """Metinleri Türkçe karaktersiz ve küçük harfe çevirir (Esnek arama için)"""
+    """Metinleri Türkçe karaktersiz ve küçük harfe çevirir"""
     if not isinstance(text, str):
         return ""
     text = (
@@ -134,59 +134,35 @@ def norm(text):
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
 
-    # Sütun isimlerini akıllıca yakala
-    cols = {str(c).strip(): str(c).strip().lower() for c in df.columns}
+    # Kolon isimlerini temizle (başındaki/sonundaki boşlukları sil)
+    df.columns = df.columns.str.strip()
 
-    uni_col, bolum_col, sira_col, puan_col, sehir_col, fakulte_col = (
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    )
+    # Tam eşleşen sütun bulucu (Karıklığı Önler)
+    rename_mapping = {}
+    for col in df.columns:
+        c_low = col.lower()
+        if "üniversite" in c_low or "universite" in c_low:
+            rename_mapping[col] = "Üniversite"
+        elif "bölüm" in c_low or "bolum" in c_low or "program" in c_low:
+            rename_mapping[col] = "Bölüm"
+        elif "2023" in c_low or "sıra" in c_low or "sira" in c_low:
+            rename_mapping[col] = "Sıralama"
+        elif "puan" in c_low or "tür" in c_low:
+            rename_mapping[col] = "Puan_Türü"
+        elif c_low in ["şehir", "sehir", "il adı", "şehir adı"]:
+            rename_mapping[col] = "Şehir"
+        elif "fakülte" in c_low or "fakulte" in c_low:
+            rename_mapping[col] = "Fakülte"
 
-    for orig, low in cols.items():
-        if any(
-            k in low
-            for k in ["uni", "üniversite", "universite", "üniversite adı"]
-        ):
-            uni_col = orig
-        elif any(
-            k in low for k in ["bölüm", "bolum", "program", "program adı"]
-        ):
-            bolum_col = orig
-        elif any(
-            k in low for k in ["sıra", "sira", "başarı sıralaması", "2023"]
-        ):
-            sira_col = orig
-        elif any(k in low for k in ["puan", "tür", "tur", "puan türü"]):
-            puan_col = orig
-        elif any(k in low for k in ["şehir", "sehir", "il"]):
-            sehir_col = orig
-        elif any(k in low for k in ["fakülte", "fakulte"]):
-            fakulte_col = orig
+    df = df.rename(columns=rename_mapping)
 
-    rename_dict = {}
-    if uni_col:
-        rename_dict[uni_col] = "Üniversite"
-    if bolum_col:
-        rename_dict[bolum_col] = "Bölüm"
-    if sira_col:
-        rename_dict[sira_col] = "Sıralama"
-    if puan_col:
-        rename_dict[puan_col] = "Puan_Türü"
-    if sehir_col:
-        rename_dict[sehir_col] = "Şehir"
-    if fakulte_col:
-        rename_dict[fakulte_col] = "Fakülte"
-
-    df = df.rename(columns=rename_dict)
-
-    # Olmayan kritik sütunlar varsa boş sütun oluştur patlamasın
+    # Eksik kolon kontrolü
     for req in ["Üniversite", "Bölüm", "Sıralama", "Puan_Türü", "Şehir"]:
         if req not in df.columns:
             df[req] = ""
+
+    # Şehir sütunundan float/sayısal saçmalıkları temizle
+    df["Şehir"] = df["Şehir"].astype(str).replace(r"^\d+(\.\d+)?$", "", regex=True)
 
     return df
 
@@ -268,11 +244,12 @@ with st.container():
     f1, f2, f3, f4 = st.columns(4)
     with f1:
         st.caption("HANGİ ŞEHİR")
+        # Yalnızca harf içeren gerçek şehir adlarını listele
         sehirler = sorted(
             [
-                str(x)
+                str(x).strip()
                 for x in df["Şehir"].dropna().unique()
-                if str(x).strip() != ""
+                if str(x).strip() != "" and not str(x).replace(".", "").isdigit()
             ]
         )
         secilen_sehirler = st.multiselect(
@@ -286,9 +263,9 @@ with st.container():
         st.caption("HANGİ ÜNİVERSİTE")
         universiteler = sorted(
             [
-                str(x)
+                str(x).strip()
                 for x in df["Üniversite"].dropna().unique()
-                if str(x).strip() != ""
+                if str(x).strip() != "" and not str(x).replace(".", "").isdigit()
             ]
         )
         secilen_unis = st.multiselect(
@@ -302,9 +279,9 @@ with st.container():
         st.caption("HANGİ BÖLÜM")
         bolumler = sorted(
             [
-                str(x)
+                str(x).strip()
                 for x in df["Bölüm"].dropna().unique()
-                if str(x).strip() != ""
+                if str(x).strip() != "" and not str(x).replace(".", "").isdigit()
             ]
         )
         secilen_bolumler = st.multiselect(
@@ -407,7 +384,6 @@ with tab1:
                     )
                 ]
 
-        # YANLIZCA İSTEDİĞİN SADE UYARI
         if temp_df.empty:
             st.warning("⚠️ Sonuç çıkmadı!")
         else:
