@@ -140,26 +140,21 @@ def veri_yukle():
     for col in df.columns:
         c_low = norm(col)
 
-        # "kod", "id", "kodu" içeren sütunları kesinlikle harici tutalım
         if "kod" in c_low or "id" in c_low or "no" in c_low:
             continue
 
-        # Üniversite
         if any(
             k in c_low for k in ["universite", "uni_adi", "univer"]
         ) and "Üniversite" not in rename_mapping.values():
             rename_mapping[col] = "Üniversite"
 
-        # Bölüm (Program kodu yerine isim olan sütunu yakalayalım)
         elif any(
             k in c_low for k in ["bolum", "program_adi", "bolum_adi", "program"]
         ) and "Bölüm" not in rename_mapping.values():
-            # Sütunun ilk değerine bakarak sayısal (kod) olmadığını doğrulayalım
             sample_val = str(df[col].dropna().iloc[0]) if not df[col].dropna().empty else ""
             if not sample_val.replace(".", "").isdigit():
                 rename_mapping[col] = "Bölüm"
 
-        # Sıralama
         elif any(
             k in c_low
             for k in [
@@ -174,25 +169,21 @@ def veri_yukle():
         ) and "Sıralama" not in rename_mapping.values():
             rename_mapping[col] = "Sıralama"
 
-        # Puan Türü
         elif any(
             k in c_low for k in ["puan", "tur", "puan_turu", "alan"]
         ) and "Puan_Türü" not in rename_mapping.values():
             rename_mapping[col] = "Puan_Türü"
 
-        # Şehir
         elif any(
             k in c_low for k in ["sehir", "il", "sehir_adi", "il_adi", "şehir"]
         ) and "Şehir" not in rename_mapping.values():
             rename_mapping[col] = "Şehir"
 
-        # Fakülte
         elif "fakulte" in c_low and "Fakülte" not in rename_mapping.values():
             rename_mapping[col] = "Fakülte"
 
     df = df.rename(columns=rename_mapping)
 
-    # Eğer "Bölüm" hala bulunamadıysa, sayısal olmayan ilk metin sütununu Bölüm yapalım
     if "Bölüm" not in df.columns:
         for col in df.columns:
             if col not in ["Üniversite", "Sıralama", "Puan_Türü", "Şehir", "Fakülte"]:
@@ -212,7 +203,6 @@ def veri_yukle():
         df["Şehir"].astype(str).replace(r"^\d+(\.\d+)?$", "", regex=True)
     )
 
-    # Sıralamayı Temizleme ve Sayısala Çevirme
     def siralama_temizle(val):
         try:
             val_str = (
@@ -416,17 +406,12 @@ with tab1:
                 )
             ]
 
-        # 4. Bölüm Filtresi
+        # 4. Bölüm Filtresi (Birebir Eşleşme Esnekliği)
         if secilen_bolumler:
-            b_targets = [norm(b) for b in secilen_bolumler]
-            temp_df = temp_df[
-                temp_df["Bölüm"].apply(
-                    lambda x: any(btarg in norm(str(x)) for btarg in b_targets)
-                )
-            ]
+            temp_df = temp_df[temp_df["Bölüm"].isin(secilen_bolumler)]
 
-        # 5. Burs Filtresi
-        if secilen_burslar:
+        # 5. Burs Filtresi (Bölüm seçilmediyse uygula, çakışmayı önle)
+        if secilen_burslar and not secilen_bolumler:
             burs_keywords = []
             for b in secilen_burslar:
                 b_norm = norm(b)
@@ -453,7 +438,6 @@ with tab1:
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
 
-            # Sonuçları sıralamay göre sıralayıp ilk 100'ü göster
             temp_df = temp_df.sort_values(by="Sıralama_Sayisal", ascending=True)
             gosterilecek_df = temp_df.head(100)
 
