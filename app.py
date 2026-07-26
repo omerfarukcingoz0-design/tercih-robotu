@@ -1,53 +1,98 @@
-import io
 import pandas as pd
 import streamlit as st
 
-# Sayfa Yapılandırması (Açık ve Modern Arayüz)
+# Sayfa Yapılandırması (Marco Asensio & En Büyük Fener Teması)
 st.set_page_config(
-    page_title="Marco Asensio | YKS Tercih Robotu",
-    page_icon="🎓",
+    page_title="Marco Asensio (enbüyük fener)",
+    page_icon="💛💙",
     layout="wide",
 )
 
-# Derece Kampüsü Tarzı Modern CSS Tasarımı
+# Resim URL'si
+bg_image_url = "https://img.piri.net/piri/upload/3/2026/5/25/d40fffbf-marco-asensio-kadroya-alindi-mi-ispanya-milli-takiminin-dunya-kupasi-kadrosu-belli-oldu.webp"
+
+# --- SARI-LACİVERT & ASENSIO GÖRSEL ARKA PLANLI CSS TASARIMI ---
 st.markdown(
-    """
+    f"""
 <style>
-    .stApp {
-        background-color: #f8fafc;
-        color: #0f172a;
-    }
-    .card {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
+    /* Arka Plan: Marco Asensio Fotoğrafı + Karartma Kaplaması */
+    .stApp {{
+        background: linear-gradient(rgba(0, 12, 30, 0.85), rgba(0, 8, 20, 0.90)), url("{bg_image_url}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        color: #ffffff;
+    }}
+    
+    /* Sarı & Lacivert Başlık Stili */
+    .asensio-title {{
+        font-size: 42px;
+        font-weight: 900;
+        background: linear-gradient(90deg, #ffed00, #ffffff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0px 4px 15px rgba(255, 237, 0, 0.4);
+        margin-bottom: 5px;
+    }}
+    
+    .asensio-subtitle {{
+        color: #ffed00;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        margin-bottom: 25px;
+        text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.8);
+    }}
+
+    /* Üst Hero Arama Paneli */
+    .hero-panel {{
+        background: rgba(0, 26, 58, 0.75);
+        border: 2px solid #ffed00;
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 30px rgba(255, 237, 0, 0.2);
+        backdrop-filter: blur(12px);
+    }}
+    
+    /* Kart Tasarımı (Sarı-Lacivert Detaylı) */
+    .card {{
+        background: rgba(10, 25, 47, 0.85);
+        border: 1px solid rgba(255, 237, 0, 0.3);
+        border-left: 5px solid #ffed00;
         border-radius: 16px;
-        padding: 20px;
+        padding: 24px;
         margin-bottom: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-    .badge-guvenli { background-color: #dcfce7; color: #15803d; font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 13px; }
-    .badge-dengeli { background-color: #fef3c7; color: #b45309; font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 13px; }
-    .badge-riskli { background-color: #fee2e2; color: #b91c1c; font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 13px; }
-    .stat-box {
-        background-color: #f1f5f9;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(8px);
+    }}
+    
+    /* Rozetler */
+    .badge-guvenli {{ background-color: #10b981; color: #ffffff; font-weight: bold; padding: 6px 16px; border-radius: 20px; font-size: 13px; display: inline-block; }}
+    .badge-dengeli {{ background-color: #f59e0b; color: #ffffff; font-weight: bold; padding: 6px 16px; border-radius: 20px; font-size: 13px; display: inline-block; }}
+    .badge-riskli {{ background-color: #ef4444; color: #ffffff; font-weight: bold; padding: 6px 16px; border-radius: 20px; font-size: 13px; display: inline-block; }}
+    
+    /* İstatistik Kutuları */
+    .stat-box {{
+        background: rgba(0, 12, 30, 0.85);
         border-radius: 12px;
-        padding: 10px 15px;
+        padding: 12px;
         text-align: center;
-        border: 1px solid #e2e8f0;
-    }
-    .stat-title { font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase; }
-    .stat-value { font-size: 18px; color: #0f172a; font-weight: 800; }
+        border: 1px solid rgba(255, 237, 0, 0.25);
+    }}
+    .stat-title {{ font-size: 11px; color: #ffed00; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }}
+    .stat-value {{ font-size: 20px; color: #ffffff; font-weight: 800; margin-top: 2px; }}
 </style>
 """,
     unsafe_allow_html=True,
 )
 
 
-# Veri Yükleme ve Sütun Yapısını Düzeltme
+# Veri Yükleme ve Sütun Yapısını Temizleme
 @st.cache_data
 def veri_yukle():
     df = pd.read_csv("tum_bolumler.csv")
-
     df.columns = [str(col).strip().lower() for col in df.columns]
 
     def sutun_bul(anahtar_kelimeler):
@@ -92,86 +137,134 @@ def olasilik_hesapla(ogrenci_sira, bolum_sira):
     try:
         bolum_sira = float(bolum_sira)
         if pd.isna(bolum_sira) or bolum_sira <= 0:
-            return "🔴 RİSKLİ", "badge-riskli"
+            return "RİSKLİ", "badge-riskli"
     except:
-        return "🔴 RİSKLİ", "badge-riskli"
+        return "RİSKLİ", "badge-riskli"
 
     fark = ogrenci_sira - bolum_sira
 
     if fark <= -10000:
-        return "🟢 GÜVENLİ", "badge-guvenli"
+        return "GÜVENLİ", "badge-guvenli"
     elif -10000 < fark <= 5000:
-        return "🟡 DENGELİ", "badge-dengeli"
+        return "DENGELİ", "badge-dengeli"
     else:
-        return "🔴 RİSKLİ", "badge-riskli"
+        return "RİSKLİ", "badge-riskli"
 
 
-# Session State (Tercih Listesi Hafızası)
 if "tercihler" not in st.session_state:
     st.session_state.tercihler = []
 
-# --- SOL PANEL FİLTRELERİ ---
-st.sidebar.title("🎯 Tercih Robotu Filtreleri")
-
-ogrenci_sira = st.sidebar.number_input(
-    "YKS Sıralamanız:", min_value=1, value=50000, step=1000
+# --- ÜST BAŞLIKLAR & ASENSIO İMZASI ---
+st.markdown(
+    '<div class="asensio-title">Marco Asensio (enbüyük fener)</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="asensio-subtitle">💛💙 Marco Asensio (enbüyük fener) Akıllı Analiz Portalı</div>',
+    unsafe_allow_html=True,
 )
 
-# Ayrı Ayrı Üniversite ve Bölüm Araması
-arama_uni = st.sidebar.text_input(
-    "🏫 Üniversite Adı:", placeholder="Örn: Koç, İTÜ, Boğaziçi..."
-)
-arama_bolum = st.sidebar.text_input(
-    "🎓 Bölüm Adı:", placeholder="Örn: İşletme, Bilgisayar..."
-)
+# --- ÜST MODERN ARAMA PANELİ ---
+with st.container():
+    st.markdown('<div class="hero-panel">', unsafe_allow_html=True)
 
-# Şehir Seçimi
-sehirler = (
-    sorted(
-        [str(x) for x in df["Şehir"].dropna().unique() if str(x).strip() != ""]
-    )
-    if "Şehir" in df.columns
-    else []
-)
-secilen_sehirler = st.sidebar.multiselect("Şehir Seçin:", sehirler)
+    # 1. Satır: Puan Türü + Sıralama Input
+    c1, c2 = st.columns([6, 4])
+    with c1:
+        st.caption("PUAN TÜRÜ")
+        puan_turleri = ["TÜMÜ", "SAY", "EA", "SÖZ", "DİL", "TYT"]
+        secilen_puan = st.radio(
+            "Puan Türü", puan_turleri, horizontal=True, label_visibility="collapsed"
+        )
+    with c2:
+        st.caption("BAŞARI SIRALAMAN")
+        ogrenci_sira = st.number_input(
+            "Başarı Sıralaman",
+            min_value=1,
+            value=50000,
+            step=1000,
+            label_visibility="collapsed",
+        )
 
-# Puan Türü
-puan_turleri = (
-    ["Tümü"]
-    + sorted(
-        [
-            str(x)
-            for x in df["Puan_Türü"].dropna().unique()
-            if str(x).strip() != ""
-        ]
-    )
-    if "Puan_Türü" in df.columns
-    else ["Tümü"]
-)
-secilen_puan = st.sidebar.selectbox("Puan Türü:", puan_turleri)
+    st.write("---")
 
-# İhtimal Filtresi (Renklendirildi)
-durum_filtresi = st.sidebar.multiselect(
-    "Durum:",
-    ["🟢 GÜVENLİ", "🟡 DENGELİ", "🔴 RİSKLİ"],
-    default=["🟢 GÜVENLİ", "🟡 DENGELİ", "🔴 RİSKLİ"],
-)
+    # 2. Satır: Şehir, Üniversite Adı, Bölüm Adı
+    f1, f2, f3 = st.columns(3)
+    with f1:
+        st.caption("ŞEHİR SÜZGEÇİ")
+        sehirler = (
+            sorted(
+                [
+                    str(x)
+                    for x in df["Şehir"].dropna().unique()
+                    if str(x).strip() != ""
+                ]
+            )
+            if "Şehir" in df.columns
+            else []
+        )
+        secilen_sehirler = st.multiselect(
+            "Şehir Seçin",
+            sehirler,
+            placeholder="Şehir Seçiniz...",
+            label_visibility="collapsed",
+        )
+
+    with f2:
+        st.caption("ÜNİVERSİTE ARA")
+        arama_uni = st.text_input(
+            "Üniversite",
+            placeholder="Örn: Boğaziçi, Koç, İTÜ...",
+            label_visibility="collapsed",
+        )
+
+    with f3:
+        st.caption("BÖLÜM ARA")
+        arama_bolum = st.text_input(
+            "Bölüm",
+            placeholder="Örn: Bilgisayar, İşletme...",
+            label_visibility="collapsed",
+        )
+
+    st.write("---")
+
+    # 3. Satır: Durum Filtresi
+    d1, d2, d3, d4 = st.columns([2, 2, 2, 4])
+    with d1:
+        chk_guvenli = st.checkbox("🟢 GÜVENLİ", value=True)
+    with d2:
+        chk_dengeli = st.checkbox("🟡 DENGELİ", value=True)
+    with d3:
+        chk_riskli = st.checkbox("🔴 RİSKLİ", value=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+# Durum Listesi
+secilen_durumlar = []
+if chk_guvenli:
+    secilen_durumlar.append("GÜVENLİ")
+if chk_dengeli:
+    secilen_durumlar.append("DENGELİ")
+if chk_riskli:
+    secilen_durumlar.append("RİSKLİ")
 
 
 # --- FİLTRELEME MANTIĞI ---
 filtreli_df = pd.DataFrame()
 
-# En az bir filtre girildiyse aramayı başlat
 if (
     arama_uni
     or arama_bolum
     or secilen_sehirler
-    or (secilen_puan != "Tümü")
+    or (secilen_puan != "TÜMÜ")
 ):
     temp_df = df.copy()
 
-    if secilen_puan != "Tümü" and "Puan_Türü" in temp_df.columns:
-        temp_df = temp_df[temp_df["Puan_Türü"].astype(str) == secilen_puan]
+    if secilen_puan != "TÜMÜ" and "Puan_Türü" in temp_df.columns:
+        temp_df = temp_df[
+            temp_df["Puan_Türü"].astype(str).str.upper() == secilen_puan
+        ]
 
     if secilen_sehirler and "Şehir" in temp_df.columns:
         temp_df = temp_df[temp_df["Şehir"].astype(str).isin(secilen_sehirler)]
@@ -193,25 +286,28 @@ if (
     filtreli_df = temp_df
 
 
-# --- ANA EKRAN SEKMELERİ ---
-st.title("🎓 YKS Tercih Robotu")
-
-tab1, tab2 = st.tabs(["🔍 Bölüm Arama", "📋 Tercih Listem"])
+# --- LİSTELEME EKRANI ---
+tab1, tab2 = st.tabs(
+    [
+        "🔍 Marco Asensio (enbüyük fener) - Sonuçlar",
+        "📋 Marco Asensio (enbüyük fener) - Listem",
+    ]
+)
 
 with tab1:
     if (
         not arama_uni
         and not arama_bolum
         and not secilen_sehirler
-        and secilen_puan == "Tümü"
+        and secilen_puan == "TÜMÜ"
         and filtreli_df.empty
     ):
         st.info(
-            "👈 Lütfen sol taraftaki filtre alanından **Üniversite Adı**, **Bölüm Adı** veya **Şehir** girerek aramayı başlatın."
+            "👈 **Marco Asensio (enbüyük fener)** arama panelinden Bölüm, Üniversite veya Şehir seçerek sorgulama yapın."
         )
     else:
-        st.write(
-            f"**Girilen Sıralama:** {ogrenci_sira:,} | **Bulunan Sonuç:** {len(filtreli_df)} Program"
+        st.markdown(
+            f"### 📍 Marco Asensio (enbüyük fener) - **{len(filtreli_df)}** Program Buldu"
         )
 
         sira_col = "Sıralama" if "Sıralama" in filtreli_df.columns else "sıralama"
@@ -220,8 +316,7 @@ with tab1:
             bolum_sira = row.get(sira_col, 0)
             durum, badge_class = olasilik_hesapla(ogrenci_sira, bolum_sira)
 
-            # Durum Filtresi Kontrolü
-            if durum not in durum_filtresi:
+            if durum not in secilen_durumlar:
                 continue
 
             uni_adi = row.get("Üniversite", "Üniversite Belirtilmemiş")
@@ -230,60 +325,73 @@ with tab1:
             sehir = row.get("Şehir", "")
             puan_turu = row.get("Puan_Türü", "")
 
-            # Kart Tasarımı
-            with st.container():
-                st.markdown(
-                    f"""
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="margin: 0; color: #0f172a; font-size: 20px;">{bolum_adi}</h3>
+            # Kart Arayüzü
+            st.markdown(
+                f"""
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h3 style="margin: 0 0 6px 0; font-size: 22px; color: #ffed00;">{bolum_adi}</h3>
+                        <p style="margin: 0; color: #ffffff; font-weight: 700; font-size: 15px;">{uni_adi} · {sehir}</p>
+                        <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px;">{fakulte}</p>
+                    </div>
+                    <div>
                         <span class="{badge_class}">{durum}</span>
                     </div>
-                    <p style="margin: 5px 0 15px 0; color: #0284c7; font-weight: 600;">{uni_adi} · {sehir}</p>
-                    <p style="margin: 0 0 15px 0; color: #64748b; font-size: 13px;">{fakulte}</p>
-                    
-                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                        <div class="stat-box" style="flex: 1;">
-                            <div class="stat-title">TABAN SIRALAMASI</div>
-                            <div class="stat-value">{bolum_sira if pd.notna(bolum_sira) else '—'}</div>
-                        </div>
-                        <div class="stat-box" style="flex: 1;">
-                            <div class="stat-title">PUAN TÜRÜ</div>
-                            <div class="stat-value">{puan_turu}</div>
-                        </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
+                    <div class="stat-box">
+                        <div class="stat-title">TABAN SIRALAMASI</div>
+                        <div class="stat-value" style="color: #ffed00;">{f"{int(bolum_sira):,}" if pd.notna(bolum_sira) and str(bolum_sira).isdigit() else bolum_sira}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-title">PUAN TÜRÜ</div>
+                        <div class="stat-value">{puan_turu}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-title">ŞEHİR</div>
+                        <div class="stat-value">{sehir}</div>
                     </div>
                 </div>
-                """,
-                    unsafe_allow_html=True,
-                )
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
 
-                # Listeme Ekle / Çıkar
-                tercih_item = {
-                    "Üniversite": uni_adi,
-                    "Bölüm": bolum_adi,
-                    "Şehir": sehir,
-                    "Sıralama": bolum_sira,
-                    "Durum": durum,
-                }
+            # Tercih Ekle / Çıkar
+            tercih_item = {
+                "Üniversite": uni_adi,
+                "Bölüm": bolum_adi,
+                "Şehir": sehir,
+                "Sıralama": bolum_sira,
+                "Durum": durum,
+            }
 
+            c_btn1, _ = st.columns([3, 7])
+            with c_btn1:
                 if tercih_item in st.session_state.tercihler:
                     if st.button(
-                        f"✓ Listede Ekli (Çıkar)", key=f"btn_remove_{idx}"
+                        f"✓ Listede Ekli (Çıkar)",
+                        key=f"btn_rem_{idx}",
+                        type="secondary",
                     ):
                         st.session_state.tercihler.remove(tercih_item)
                         st.rerun()
                 else:
                     if st.button(
-                        f"+ Tercih Listeme Ekle", key=f"btn_add_{idx}"
+                        f"➕ Tercih Listeme Ekle",
+                        key=f"btn_add_{idx}",
+                        type="primary",
                     ):
                         st.session_state.tercihler.append(tercih_item)
                         st.rerun()
 
-                st.write("")
+            st.write("")
 
 
 with tab2:
-    st.subheader("📌 Oluşturduğunuz Tercih Listesi")
+    st.subheader("📌 Marco Asensio (enbüyük fener) - Özel Listeniz")
 
     if not st.session_state.tercihler:
         st.warning("Henüz listenize hiç bölüm eklemediniz.")
@@ -294,8 +402,8 @@ with tab2:
         csv_data = tercih_df.to_csv(index=False).encode("utf-8")
 
         st.download_button(
-            label="📥 Tercih Listemi İndir (CSV/Excel)",
+            label="📥 Marco Asensio (enbüyük fener) Listesini İndir (Excel / CSV)",
             data=csv_data,
-            file_name="tercih_listem.csv",
+            file_name="marco_asensio_tercih_listem.csv",
             mime="text/csv",
         )
