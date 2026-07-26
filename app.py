@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+import unicodedata
 
 # Sayfa Yapılandırması
 st.set_page_config(
@@ -115,20 +116,14 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-def tr_lower(text):
+# --- TÜRKÇE VE SAF METİN TEMİZLEYİCİ ---
+def metin_temizle(text):
     if not isinstance(text, str):
         return ""
-    return (
-        text.replace("İ", "i")
-        .replace("I", "ı")
-        .replace("Ğ", "ğ")
-        .replace("Ü", "ü")
-        .replace("Ş", "ş")
-        .replace("Ö", "ö")
-        .replace("Ç", "ç")
-        .lower()
-    )
+    text = text.replace("İ", "i").replace("I", "ı").replace("Ğ", "ğ").replace("Ü", "ü").replace("Ş", "ş").replace("Ö", "ö").replace("Ç", "ç")
+    text = text.lower()
+    # Aksan ve tuhaf karakterleri normalize et
+    return "".join(c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn")
 
 
 @st.cache_data
@@ -150,18 +145,12 @@ def veri_yukle():
     fakulte_col = sutun_bul(["fakulte", "fakülte"])
 
     renames = {}
-    if uni_col:
-        renames[uni_col] = "Üniversite"
-    if bolum_col:
-        renames[bolum_col] = "Bölüm"
-    if sira_col:
-        renames[sira_col] = "Sıralama"
-    if puan_col:
-        renames[puan_col] = "Puan_Türü"
-    if sehir_col:
-        renames[sehir_col] = "Şehir"
-    if fakulte_col:
-        renames[fakulte_col] = "Fakülte"
+    if uni_col: renames[uni_col] = "Üniversite"
+    if bolum_col: renames[bolum_col] = "Bölüm"
+    if sira_col: renames[sira_col] = "Sıralama"
+    if puan_col: renames[puan_col] = "Puan_Türü"
+    if sehir_col: renames[sehir_col] = "Şehir"
+    if fakulte_col: renames[fakulte_col] = "Fakülte"
 
     return df.rename(columns=renames)
 
@@ -175,7 +164,7 @@ except Exception as e:
 
 def olasilik_hesapla(ogrenci_sira, bolum_sira):
     try:
-        bolum_sira = float(bolum_sira)
+        bolum_sira = float(str(bolum_sira).replace(".", "").replace(",", "."))
         if pd.isna(bolum_sira) or bolum_sira <= 0:
             return "NAH GİDERSİN", "badge-riskli"
     except:
@@ -201,19 +190,10 @@ if "arama_yapildi" not in st.session_state:
 # --- BAŞLIKLAR & SAĞ RESİM ---
 head_col1, head_col2 = st.columns([7, 3])
 with head_col1:
-    st.markdown(
-        '<div class="asensio-title">Marco Asensio (enbüyük fener)</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div class="asensio-subtitle">💛💙 Tercih Robotu (Ağlama Masası)</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<div class="asensio-title">Marco Asensio (enbüyük fener)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="asensio-subtitle">💛💙 Tercih Robotu (Ağlama Masası)</div>', unsafe_allow_html=True)
 with head_col2:
-    st.markdown(
-        f'<img src="{small_logo_url}" class="scoreboard-img">',
-        unsafe_allow_html=True,
-    )
+    st.markdown(f'<img src="{small_logo_url}" class="scoreboard-img">', unsafe_allow_html=True)
 
 with st.container():
     st.markdown('<div class="hero-panel">', unsafe_allow_html=True)
@@ -222,97 +202,33 @@ with st.container():
     with c1:
         st.caption("HANGİ ALANDAN PATLADIN")
         puan_turleri = ["TÜMÜ", "SAY", "EA", "SÖZ", "DİL", "TYT"]
-        secilen_puan = st.radio(
-            "Puan Türü", puan_turleri, horizontal=True, label_visibility="collapsed"
-        )
+        secilen_puan = st.radio("Puan Türü", puan_turleri, horizontal=True, label_visibility="collapsed")
     with c2:
         st.caption("KAÇ SIRALAMA YAPTIN LAN ENAYİ")
-        ogrenci_sira = st.number_input(
-            "Başarı Sıralaman",
-            min_value=1,
-            value=610340,
-            step=1000,
-            label_visibility="collapsed",
-        )
+        ogrenci_sira = st.number_input("Başarı Sıralaman", min_value=1, value=610340, step=1000, label_visibility="collapsed")
 
     st.write("---")
 
     f1, f2, f3, f4 = st.columns(4)
     with f1:
         st.caption("HANGİ ŞEHİR")
-        sehirler = (
-            sorted(
-                [
-                    str(x)
-                    for x in df["Şehir"].dropna().unique()
-                    if str(x).strip() != ""
-                ]
-            )
-            if "Şehir" in df.columns
-            else []
-        )
-        secilen_sehirler = st.multiselect(
-            "Şehir Seçin",
-            sehirler,
-            placeholder="Şehir seç...",
-            label_visibility="collapsed",
-        )
+        sehirler = sorted([str(x) for x in df["Şehir"].dropna().unique() if str(x).strip() != ""]) if "Şehir" in df.columns else []
+        secilen_sehirler = st.multiselect("Şehir Seçin", sehirler, placeholder="Şehir seç...", label_visibility="collapsed")
 
     with f2:
         st.caption("HANGİ ÜNİVERSİTE")
-        universiteler = (
-            sorted(
-                [
-                    str(x)
-                    for x in df["Üniversite"].dropna().unique()
-                    if str(x).strip() != ""
-                ]
-            )
-            if "Üniversite" in df.columns
-            else []
-        )
-        secilen_unis = st.multiselect(
-            "Üniversite Seçin",
-            universiteler,
-            placeholder="Üni seç veya yaz...",
-            label_visibility="collapsed",
-        )
+        universiteler = sorted([str(x) for x in df["Üniversite"].dropna().unique() if str(x).strip() != ""]) if "Üniversite" in df.columns else []
+        secilen_unis = st.multiselect("Üniversite Seçin", universiteler, placeholder="Üni seç veya yaz...", label_visibility="collapsed")
 
     with f3:
         st.caption("HANGİ BÖLÜM")
-        bolumler = (
-            sorted(
-                [
-                    str(x)
-                    for x in df["Bölüm"].dropna().unique()
-                    if str(x).strip() != ""
-                ]
-            )
-            if "Bölüm" in df.columns
-            else []
-        )
-        secilen_bolumler = st.multiselect(
-            "Bölüm Seçin",
-            bolumler,
-            placeholder="Bölüm seç veya yaz...",
-            label_visibility="collapsed",
-        )
+        bolumler = sorted([str(x) for x in df["Bölüm"].dropna().unique() if str(x).strip() != ""]) if "Bölüm" in df.columns else []
+        secilen_bolumler = st.multiselect("Bölüm Seçin", bolumler, placeholder="Bölüm seç veya yaz...", label_visibility="collapsed")
 
     with f4:
         st.caption("PARA VERCEK MİSİN (BURS DURUMU)")
-        burs_secenekleri = [
-            "Burslu",
-            "%50 İndirimli",
-            "%25 İndirimli",
-            "Ücretli",
-            "Ücretsiz",
-        ]
-        secilen_burslar = st.multiselect(
-            "Burs Durumu",
-            burs_secenekleri,
-            placeholder="Burs / İndirim seç...",
-            label_visibility="collapsed",
-        )
+        burs_secenekleri = ["Burslu", "%50 İndirimli", "%25 İndirimli", "Ücretli", "Ücretsiz"]
+        secilen_burslar = st.multiselect("Burs Durumu", burs_secenekleri, placeholder="Burs / İndirim seç...", label_visibility="collapsed")
 
     st.write("")
     btn_col1, btn_col2, btn_col3 = st.columns([3, 6, 3])
@@ -323,12 +239,7 @@ with st.container():
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-tab1, tab2 = st.tabs(
-    [
-        "🔍 SONUÇLAR ALLAH BÜYÜK",
-        "📋 Yandık Listesi (Kaydedilenler)",
-    ]
-)
+tab1, tab2 = st.tabs(["🔍 SONUÇLAR ALLAH BÜYÜK", "📋 Yandık Listesi (Kaydedilenler)"])
 
 with tab1:
     if not st.session_state.arama_yapildi:
@@ -336,49 +247,41 @@ with tab1:
     else:
         temp_df = df.copy()
 
-        # Puan Türü Filtresi
+        # 1. Puan Türü Filtresi
         if secilen_puan != "TÜMÜ" and "Puan_Türü" in temp_df.columns:
-            temp_df = temp_df[
-                temp_df["Puan_Türü"].astype(str).str.upper() == secilen_puan
-            ]
+            temp_df = temp_df[temp_df["Puan_Türü"].astype(str).str.upper() == secilen_puan]
 
-        # Şehir Filtresi
+        # 2. Şehir Filtresi
         if secilen_sehirler and "Şehir" in temp_df.columns:
-            secilen_sehirler_tr = [tr_lower(s) for s in secilen_sehirler]
-            temp_df = temp_df[
-                temp_df["Şehir"].apply(
-                    lambda x: any(s in tr_lower(str(x)) for s in secilen_sehirler_tr)
-                )
-            ]
+            secilen_sehirler_clean = [metin_temizle(s) for s in secilen_sehirler]
+            temp_df = temp_df[temp_df["Şehir"].apply(lambda x: any(s in metin_temizle(str(x)) for s in secilen_sehirler_clean))]
 
-        # Üniversite Filtresi
+        # 3. Üniversite Filtresi
         if secilen_unis and "Üniversite" in temp_df.columns:
-            secilen_unis_tr = [tr_lower(u) for u in secilen_unis]
-            temp_df = temp_df[
-                temp_df["Üniversite"].apply(
-                    lambda x: any(u in tr_lower(str(x)) for u in secilen_unis_tr)
-                )
-            ]
+            secilen_unis_clean = [metin_temizle(u) for u in secilen_unis]
+            temp_df = temp_df[temp_df["Üniversite"].apply(lambda x: any(u in metin_temizle(str(x)) for u in secilen_unis_clean))]
 
-        # Bölüm + Burs Akıllı Arama
-        # (Hem bölüm adında seçilen bölüm metnini hem de burs metnini esnek arar)
-        arama_metinleri = []
-        if secilen_bolumler:
-            arama_metinleri.extend([tr_lower(b) for b in secilen_bolumler])
-        if secilen_burslar:
-            arama_metinleri.extend([tr_lower(b) for b in secilen_burslar])
+        # 4. Bölüm Filtresi
+        if secilen_bolumler and "Bölüm" in temp_df.columns:
+            secilen_bolumler_clean = [metin_temizle(b) for b in secilen_bolumler]
+            temp_df = temp_df[temp_df["Bölüm"].apply(lambda x: any(b in metin_temizle(str(x)) for b in secilen_bolumler_clean))]
 
-        if arama_metinleri and "Bölüm" in temp_df.columns:
-            temp_df = temp_df[
-                temp_df["Bölüm"].apply(
-                    lambda x: all(m in tr_lower(str(x)) for m in arama_metinleri)
+        # 5. Burs Filtresi (Bölüm Sütunu İçinde Esnek Arama)
+        if secilen_burslar and "Bölüm" in temp_df.columns:
+            secilen_burslar_clean = [metin_temizle(b) for b in secilen_burslar]
+            # Örn: "%50 indirimli" veya "50" veya "burslu" eşleşmesi
+            temp_df = temp_df[temp_df["Bölüm"].apply(
+                lambda x: any(
+                    b in metin_temizle(str(x)) or 
+                    ("50" in b and "50" in metin_temizle(str(x))) or
+                    ("25" in b and "25" in metin_temizle(str(x))) or
+                    ("burs" in b and "burs" in metin_temizle(str(x)))
+                    for b in secilen_burslar_clean
                 )
-            ]
+            )]
 
         if temp_df.empty:
-            st.warning(
-                "⚠️ Aradığın kriterlerde sonuç çıkmadı! Seçimlerden bazılarını kaldırıp (örneğin sadece Bölüm seçerek) tekrar 'BUL LAN'a bas."
-            )
+            st.warning("⚠️ Aradığın kriterlerde sonuç çıkmadı! YÖK Atlas verisinde bu üniversite/bölüm kombinasyonu farklı bir isimle kayıtlı olabilir. Burs kutusunu boş bırakıp tekrar 'BUL LAN'a basmayı dene.")
         else:
             st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
 
@@ -412,7 +315,7 @@ with tab1:
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
                         <div class="stat-box">
                             <div class="stat-title">KAÇLA KAPATMIŞ</div>
-                            <div class="stat-value" style="color: #ffed00;">{f"{int(bolum_sira):,}" if pd.notna(bolum_sira) and str(bolum_sira).replace('.','',1).isdigit() else bolum_sira}</div>
+                            <div class="stat-value" style="color: #ffed00;">{bolum_sira}</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-title">ALAN</div>
@@ -439,19 +342,11 @@ with tab1:
                 c_btn1, _ = st.columns([3, 7])
                 with c_btn1:
                     if tercih_item in st.session_state.tercihler:
-                        if st.button(
-                            f"✓ Vazgeçtim At Bunu",
-                            key=f"btn_rem_{idx}",
-                            type="secondary",
-                        ):
+                        if st.button(f"✓ Vazgeçtim At Bunu", key=f"btn_rem_{idx}", type="secondary"):
                             st.session_state.tercihler.remove(tercih_item)
                             st.rerun()
                     else:
-                        if st.button(
-                            f"➕ Yandık, Ekle Listeye",
-                            key=f"btn_add_{idx}",
-                            type="primary",
-                        ):
+                        if st.button(f"➕ Yandık, Ekle Listeye", key=f"btn_add_{idx}", type="primary"):
                             st.session_state.tercihler.append(tercih_item)
                             st.rerun()
 
