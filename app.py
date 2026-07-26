@@ -214,26 +214,8 @@ with st.container():
             label_visibility="collapsed",
         )
 
-    st.write("---")
-
-    d1, d2, d3, d4 = st.columns([2, 2, 2, 4])
-    with d1:
-        chk_guvenli = st.checkbox("🟢 GELİR BU", value=True)
-    with d2:
-        chk_dengeli = st.checkbox("🟡 KISMET KANKA", value=True)
-    with d3:
-        chk_riskli = st.checkbox("🔴 NAH GİDERSİN", value=True)
-
     st.markdown("</div>", unsafe_allow_html=True)
 
-
-secilen_durumlar = []
-if chk_guvenli:
-    secilen_durumlar.append("GELİR BU")
-if chk_dengeli:
-    secilen_durumlar.append("KISMET KANKA")
-if chk_riskli:
-    secilen_durumlar.append("NAH GİDERSİN")
 
 filtreli_df = pd.DataFrame()
 
@@ -272,12 +254,30 @@ if (
 
 tab1, tab2 = st.tabs(
     [
-        "🔍 Sonuçlar (Umut Dünyası)",
+        "🔍 SONUÇLAR ALLAH BÜYÜK",
         "📋 Yandık Listesi (Kaydedilenler)",
     ]
 )
 
 with tab1:
+    d1, d2, d3, _ = st.columns([2, 2, 2, 4])
+    with d1:
+        chk_guvenli = st.checkbox("🟢 GELİR BU", value=True)
+    with d2:
+        chk_dengeli = st.checkbox("🟡 KISMET KANKA", value=True)
+    with d3:
+        chk_riskli = st.checkbox("🔴 NAH GİDERSİN", value=True)
+
+    secilen_durumlar = []
+    if chk_guvenli:
+        secilen_durumlar.append("GELİR BU")
+    if chk_dengeli:
+        secilen_durumlar.append("KISMET KANKA")
+    if chk_riskli:
+        secilen_durumlar.append("NAH GİDERSİN")
+
+    st.write("---")
+
     if (
         not arama_uni
         and not arama_bolum
