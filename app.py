@@ -76,6 +76,23 @@ st.markdown(
     }}
     .stat-title {{ font-size: 11px; color: #ffed00; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }}
     .stat-value {{ font-size: 20px; color: #ffffff; font-weight: 800; margin-top: 2px; }}
+
+    /* YEŞİL BUL LAN BUTONU TASARIMI */
+    div.stButton > button[key="btn_search_main"] {{
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+        font-weight: 900 !important;
+        font-size: 18px !important;
+        border-radius: 12px !important;
+        border: 2px solid #059669 !important;
+        padding: 10px 24px !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+        transition: all 0.3s ease !important;
+    }}
+    div.stButton > button[key="btn_search_main"]:hover {{
+        background-color: #059669 !important;
+        transform: scale(1.02);
+    }}
 </style>
 """,
     unsafe_allow_html=True,
@@ -160,6 +177,9 @@ def olasilik_hesapla(ogrenci_sira, bolum_sira):
 if "tercihler" not in st.session_state:
     st.session_state.tercihler = []
 
+if "arama_yapildi" not in st.session_state:
+    st.session_state.arama_yapildi = False
+
 # --- BAŞLIKLAR ---
 st.markdown(
     '<div class="asensio-title">Marco Asensio (enbüyük fener)</div>',
@@ -185,7 +205,7 @@ with st.container():
         ogrenci_sira = st.number_input(
             "Başarı Sıralaman",
             min_value=1,
-            value=50000,
+            value=610340,
             step=1000,
             label_visibility="collapsed",
         )
@@ -229,48 +249,13 @@ with st.container():
             label_visibility="collapsed",
         )
 
+    st.write("")
+    btn_col1, btn_col2, btn_col3 = st.columns([4, 4, 4])
+    with btn_col2:
+        if st.button("🚀 BUL LAN", key="btn_search_main", use_container_width=True):
+            st.session_state.arama_yapildi = True
+
     st.markdown("</div>", unsafe_allow_html=True)
-
-
-filtreli_df = pd.DataFrame()
-
-# Filtreleme Başlangıcı
-if (
-    arama_uni.strip()
-    or arama_bolum.strip()
-    or secilen_sehirler
-    or (secilen_puan != "TÜMÜ")
-):
-    temp_df = df.copy()
-
-    # Puan Türü Filtresi
-    if secilen_puan != "TÜMÜ" and "Puan_Türü" in temp_df.columns:
-        temp_df = temp_df[
-            temp_df["Puan_Türü"].astype(str).str.upper() == secilen_puan
-        ]
-
-    # Şehir Filtresi
-    if secilen_sehirler and "Şehir" in temp_df.columns:
-        secilen_sehirler_tr = [tr_lower(s) for s in secilen_sehirler]
-        temp_df = temp_df[
-            temp_df["Şehir"].apply(lambda x: tr_lower(str(x)) in secilen_sehirler_tr)
-        ]
-
-    # Üniversite Filtresi
-    if arama_uni.strip() and "Üniversite" in temp_df.columns:
-        uni_query = tr_lower(arama_uni.strip())
-        temp_df = temp_df[
-            temp_df["Üniversite"].apply(lambda x: uni_query in tr_lower(str(x)))
-        ]
-
-    # Bölüm Filtresi
-    if arama_bolum.strip() and "Bölüm" in temp_df.columns:
-        bolum_query = tr_lower(arama_bolum.strip())
-        temp_df = temp_df[
-            temp_df["Bölüm"].apply(lambda x: bolum_query in tr_lower(str(x)))
-        ]
-
-    filtreli_df = temp_df
 
 
 tab1, tab2 = st.tabs(
@@ -281,100 +266,121 @@ tab1, tab2 = st.tabs(
 )
 
 with tab1:
-    if (
-        not arama_uni.strip()
-        and not arama_bolum.strip()
-        and not secilen_sehirler
-        and secilen_puan == "TÜMÜ"
-    ):
-        st.info(
-            "👈 Yukarıdan bir şehir seç, üniversite veya bölüm yaz; sonuçlar patır patır dökülsün!"
-        )
-    elif filtreli_df.empty:
-        st.warning(
-            "⚠️ Kanka aradığın kriterlerde hiçbir şey bulunamadı. Aramanı biraz daraltmış olabilirsin (örneğin sadece Bölüm adını yazıp Şehir/Üni kutusunu boş bırakıp dene)."
-        )
+    if not st.session_state.arama_yapildi:
+        st.info("👈 Filtreleri ayarla, sonra yeşil **BUL LAN** butonuna bas kanka!")
     else:
-        st.markdown(
-            f"### 📍 Aha Sana **{len(filtreli_df)}** Tane Yer Buldum"
-        )
+        temp_df = df.copy()
 
-        sira_col = "Sıralama" if "Sıralama" in filtreli_df.columns else "sıralama"
+        # Puan Türü Filtresi
+        if secilen_puan != "TÜMÜ" and "Puan_Türü" in temp_df.columns:
+            temp_df = temp_df[
+                temp_df["Puan_Türü"].astype(str).str.upper() == secilen_puan
+            ]
 
-        # İlk 100 sonucu gösterelim ki performans düşmesin
-        gosterilecek_df = filtreli_df.head(100)
+        # Şehir Filtresi
+        if secilen_sehirler and "Şehir" in temp_df.columns:
+            secilen_sehirler_tr = [tr_lower(s) for s in secilen_sehirler]
+            temp_df = temp_df[
+                temp_df["Şehir"].apply(
+                    lambda x: any(s in tr_lower(str(x)) for s in secilen_sehirler_tr)
+                )
+            ]
 
-        for idx, row in gosterilecek_df.iterrows():
-            bolum_sira = row.get(sira_col, 0)
-            durum, badge_class = olasilik_hesapla(ogrenci_sira, bolum_sira)
+        # Üniversite Filtresi
+        if arama_uni.strip() and "Üniversite" in temp_df.columns:
+            uni_query = tr_lower(arama_uni.strip())
+            temp_df = temp_df[
+                temp_df["Üniversite"].apply(lambda x: uni_query in tr_lower(str(x)))
+            ]
 
-            uni_adi = row.get("Üniversite", "Üniversite Belirtilmemiş")
-            bolum_adi = row.get("Bölüm", "Bölüm Belirtilmemiş")
-            fakulte = row.get("Fakülte", "")
-            sehir = row.get("Şehir", "")
-            puan_turu = row.get("Puan_Türü", "")
+        # Bölüm Filtresi
+        if arama_bolum.strip() and "Bölüm" in temp_df.columns:
+            bolum_query = tr_lower(arama_bolum.strip())
+            temp_df = temp_df[
+                temp_df["Bölüm"].apply(lambda x: bolum_query in tr_lower(str(x)))
+            ]
 
-            st.markdown(
-                f"""
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <h3 style="margin: 0 0 6px 0; font-size: 22px; color: #ffed00;">{bolum_adi}</h3>
-                        <p style="margin: 0; color: #ffffff; font-weight: 700; font-size: 15px;">{uni_adi} · {sehir}</p>
-                        <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px;">{fakulte}</p>
-                    </div>
-                    <div>
-                        <span class="{badge_class}">{durum}</span>
-                    </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
-                    <div class="stat-box">
-                        <div class="stat-title">KAÇLA KAPATMIŞ</div>
-                        <div class="stat-value" style="color: #ffed00;">{f"{int(bolum_sira):,}" if pd.notna(bolum_sira) and str(bolum_sira).replace('.','',1).isdigit() else bolum_sira}</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-title">ALAN</div>
-                        <div class="stat-value">{puan_turu}</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-title">MEMLEKET</div>
-                        <div class="stat-value">{sehir}</div>
-                    </div>
-                </div>
-            </div>
-            """,
-                unsafe_allow_html=True,
+        if temp_df.empty:
+            st.warning(
+                "⚠️ Kanka aradığın kriterlerde sonuç çıkmadı! Şehir veya Üniversite kutularını boş bırakıp sadece Bölüm yazarak 'BUL LAN'a tekrar basmayı dene."
             )
+        else:
+            st.markdown(f"### 📍 Aha Sana **{len(temp_df)}** Tane Yer Buldum")
 
-            tercih_item = {
-                "Üniversite": uni_adi,
-                "Bölüm": bolum_adi,
-                "Şehir": sehir,
-                "Sıralama": bolum_sira,
-                "Durum": durum,
-            }
+            sira_col = "Sıralama" if "Sıralama" in temp_df.columns else "sıralama"
+            gosterilecek_df = temp_df.head(100)
 
-            c_btn1, _ = st.columns([3, 7])
-            with c_btn1:
-                if tercih_item in st.session_state.tercihler:
-                    if st.button(
-                        f"✓ Vazgeçtim At Bunu",
-                        key=f"btn_rem_{idx}",
-                        type="secondary",
-                    ):
-                        st.session_state.tercihler.remove(tercih_item)
-                        st.rerun()
-                else:
-                    if st.button(
-                        f"➕ Yandık, Ekle Listeye",
-                        key=f"btn_add_{idx}",
-                        type="primary",
-                    ):
-                        st.session_state.tercihler.append(tercih_item)
-                        st.rerun()
+            for idx, row in gosterilecek_df.iterrows():
+                bolum_sira = row.get(sira_col, 0)
+                durum, badge_class = olasilik_hesapla(ogrenci_sira, bolum_sira)
 
-            st.write("")
+                uni_adi = row.get("Üniversite", "Üniversite Belirtilmemiş")
+                bolum_adi = row.get("Bölüm", "Bölüm Belirtilmemiş")
+                fakulte = row.get("Fakülte", "")
+                sehir = row.get("Şehir", "")
+                puan_turu = row.get("Puan_Türü", "")
+
+                st.markdown(
+                    f"""
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h3 style="margin: 0 0 6px 0; font-size: 22px; color: #ffed00;">{bolum_adi}</h3>
+                            <p style="margin: 0; color: #ffffff; font-weight: 700; font-size: 15px;">{uni_adi} · {sehir}</p>
+                            <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px;">{fakulte}</p>
+                        </div>
+                        <div>
+                            <span class="{badge_class}">{durum}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
+                        <div class="stat-box">
+                            <div class="stat-title">KAÇLA KAPATMIŞ</div>
+                            <div class="stat-value" style="color: #ffed00;">{f"{int(bolum_sira):,}" if pd.notna(bolum_sira) and str(bolum_sira).replace('.','',1).isdigit() else bolum_sira}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-title">ALAN</div>
+                            <div class="stat-value">{puan_turu}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-title">MEMLEKET</div>
+                            <div class="stat-value">{sehir}</div>
+                        </div>
+                    </div>
+                </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+
+                tercih_item = {
+                    "Üniversite": uni_adi,
+                    "Bölüm": bolum_adi,
+                    "Şehir": sehir,
+                    "Sıralama": bolum_sira,
+                    "Durum": durum,
+                }
+
+                c_btn1, _ = st.columns([3, 7])
+                with c_btn1:
+                    if tercih_item in st.session_state.tercihler:
+                        if st.button(
+                            f"✓ Vazgeçtim At Bunu",
+                            key=f"btn_rem_{idx}",
+                            type="secondary",
+                        ):
+                            st.session_state.tercihler.remove(tercih_item)
+                            st.rerun()
+                    else:
+                        if st.button(
+                            f"➕ Yandık, Ekle Listeye",
+                            key=f"btn_add_{idx}",
+                            type="primary",
+                        ):
+                            st.session_state.tercihler.append(tercih_item)
+                            st.rerun()
+
+                st.write("")
 
 
 with tab2:
